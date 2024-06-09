@@ -32,12 +32,13 @@ ROOT_URL = "https://elliotonsecurity.com"
 RSS_URL = f"{ROOT_URL}/atom.xml"
 FEED_ENTRY_LINKS_FILE = PROGRAM_DIRECTORY / "feed_entry_links.txt"
 CONTENT_TEMPLATE_FILE = PROGRAM_DIRECTORY / "content_template.html"
-POLL_INTERVAL = 3 * 60 # Consider using a cron job or systemd timer instead
-DRY_RUN = False # Use this for testing, campaigns will be created but no emails will be sent out
+POLL_INTERVAL = 3 * 60  # Consider using a cron job or systemd timer instead
+DRY_RUN = False  # Use this for testing, campaigns will be created but no emails will be sent out
 
 LISTMONK_URL = "https://ping.elliotonsecurity.com:8443"
 LISTMONK_USERNAME = "elliotkillick"
 LISTMONK_PASSWORD = "PASSWORD_HERE"
+
 
 def main():
     """Program entry point"""
@@ -48,15 +49,19 @@ def main():
         main_loop()
         time.sleep(POLL_INTERVAL)
 
+
 def banner():
     """Print program banner"""
 
-    print("\n"
-          "               d88b                             8        w    w\n"
-          "8d8b d88b d88b \" dP 8d8b. .d88b Yb  db  dP d88b 8 .d88b w8ww w8ww .d88b 8d8b\n"
-          "8P   `Yb. `Yb.  dP  8P Y8 8.dP'  YbdPYbdP  `Yb. 8 8.dP'  8    8   8.dP' 8P\n"
-          "8    Y88P Y88P d888 8   8 `Y88P   YP  YP   Y88P 8 `Y88P  Y8P  Y8P `Y88P 8\n"
-          "... by @ElliotKillick\n")
+    print(
+        "\n"
+        "               d88b                             8        w    w\n"
+        '8d8b d88b d88b " dP 8d8b. .d88b Yb  db  dP d88b 8 .d88b w8ww w8ww .d88b 8d8b\n'
+        "8P   `Yb. `Yb.  dP  8P Y8 8.dP'  YbdPYbdP  `Yb. 8 8.dP'  8    8   8.dP' 8P\n"
+        "8    Y88P Y88P d888 8   8 `Y88P   YP  YP   Y88P 8 `Y88P  Y8P  Y8P `Y88P 8\n"
+        "... by @ElliotKillick\n"
+    )
+
 
 def main_loop():
     """Program infinite loop"""
@@ -79,6 +84,7 @@ def main_loop():
         if send_successful:
             update_feed_entry_links_file(new_entry.link)
 
+
 def fetch_rss() -> feedparser.FeedParserDict | None:
     """Fetch and parse RSS"""
 
@@ -90,44 +96,52 @@ def fetch_rss() -> feedparser.FeedParserDict | None:
 
     return feed
 
+
 def populate_preexisting_entries(entry_links: list[str]) -> bool:
     """Don't process feed entries that existed before first run of rss2newsletter"""
 
     if not os.path.exists(FEED_ENTRY_LINKS_FILE):
-        print( "Feed entry links file does not exist:"
-              f"{FEED_ENTRY_LINKS_FILE}. Populating it for the first time...")
+        print(
+            "Feed entry links file does not exist:"
+            f"{FEED_ENTRY_LINKS_FILE}. Populating it for the first time..."
+        )
         create_feed_entry_links_file(entry_links)
         return True
 
     print("Checking for new feed entries...")
     return False
 
+
 def create_feed_entry_links_file(entry_links: list[str]):
     """Create initial feed entry links file"""
 
-    with open(FEED_ENTRY_LINKS_FILE, 'w', encoding='utf-8') as f:
-        f.write('\n'.join(entry_links))
+    with open(FEED_ENTRY_LINKS_FILE, "w", encoding="utf-8") as f:
+        f.write("\n".join(entry_links))
+
 
 def update_feed_entry_links_file(entry_link: str):
     """Update feed entry links file by appending so new entries are no longer considered new"""
 
-    with open(FEED_ENTRY_LINKS_FILE, 'a', encoding='utf-8') as f:
+    with open(FEED_ENTRY_LINKS_FILE, "a", encoding="utf-8") as f:
         f.write(f"{entry_link}\n")
+
 
 def read_feed_entry_links_file() -> list[str]:
     """Read state of which feed entries need no further processing"""
 
-    with open(FEED_ENTRY_LINKS_FILE, 'r', encoding='utf-8') as f:
-        return f.read().strip('\n').split('\n')
+    with open(FEED_ENTRY_LINKS_FILE, "r", encoding="utf-8") as f:
+        return f.read().strip("\n").split("\n")
 
-def check_for_new_entries(entry_links_last_update: list[str],
-                          entries: list[feedparser.FeedParserDict]
-                         ) -> Iterator[feedparser.FeedParserDict]:
+
+def check_for_new_entries(
+    entry_links_last_update: list[str], entries: list[feedparser.FeedParserDict]
+) -> Iterator[feedparser.FeedParserDict]:
     """Iterate feed entries looking for any new ones"""
 
     for entry in entries:
         if entry.link not in entry_links_last_update:
             yield entry
+
 
 def create_newsletter(link: str, title: str) -> int | None:
     """Create newsletter with content and add campaign to Listmonk"""
@@ -135,10 +149,11 @@ def create_newsletter(link: str, title: str) -> int | None:
     print("Creating newsletter for:", title)
     return create_campaign(title, create_content(link, title))
 
+
 def create_content(link: str, title: str) -> str:
     """Create content to be used as body of newsletter"""
 
-    with open(CONTENT_TEMPLATE_FILE, "r", encoding='utf-8') as f:
+    with open(CONTENT_TEMPLATE_FILE, "r", encoding="utf-8") as f:
         content = f.read()
 
     content = content.replace("LINK_HERE", link)
@@ -149,10 +164,12 @@ def create_content(link: str, title: str) -> str:
         content = content.replace("IMAGE_HERE", og_image)
     else:
         # Remove optional image section
-        content = re.sub("IMAGE_OPTIONAL_BEGIN.*IMAGE_OPTIONAL_END\n", "",
-                         content, flags=re.DOTALL)
+        content = re.sub(
+            "IMAGE_OPTIONAL_BEGIN.*IMAGE_OPTIONAL_END\n", "", content, flags=re.DOTALL
+        )
 
     return content
+
 
 def fetch_url(url: str) -> str | None:
     """Get response body at a URL"""
@@ -163,6 +180,7 @@ def fetch_url(url: str) -> str | None:
         except requests.exceptions.ConnectionError:
             print(f"Failed to fetch URL: {url}! Retrying in 60 seconds...")
             time.sleep(60)
+
 
 def get_og_image(html: str) -> str | None:
     """Get Open Graph cover image URL from given HTML"""
@@ -175,6 +193,7 @@ def get_og_image(html: str) -> str | None:
     og_image = tree.find("head/meta[@property='og:image']")
     if og_image:
         return og_image.get("content")
+
 
 def send_newsletter(campaign_id: int) -> bool:
     """Given a campaign ID tell Listmonk to start it then perform error handling"""
@@ -192,62 +211,65 @@ def send_newsletter(campaign_id: int) -> bool:
     print("Error starting campaign!")
     return False
 
+
 def create_campaign(title: str, body: str) -> int:
     """Create Listmonk email campaign for new article"""
 
-    headers = {
-        'Content-Type': 'application/json;charset=utf-8'
-    }
+    headers = {"Content-Type": "application/json;charset=utf-8"}
 
     json_data = {
-        'name': f'New Article: {title}',
-        'subject': title,
-        'lists': [
-            1 # List ID 1 is my "New Articles" list
-        ],
-        'content_type': 'richtext',
-        'body': body,
-        'messenger': 'email',
-        'type': 'regular',
-        'tags': [
-            'new-article'
-        ]
+        "name": f"New Article: {title}",
+        "subject": title,
+        "lists": [1],  # List ID 1 is my "New Articles" list
+        "content_type": "richtext",
+        "body": body,
+        "messenger": "email",
+        "type": "regular",
+        "tags": ["new-article"],
     }
 
     while True:
         try:
-            response = requests.post(f"{LISTMONK_URL}/api/campaigns",
-                                     headers=headers, json=json_data,
-                                     auth=(LISTMONK_USERNAME, LISTMONK_PASSWORD))
+            response = requests.post(
+                f"{LISTMONK_URL}/api/campaigns",
+                headers=headers,
+                json=json_data,
+                auth=(LISTMONK_USERNAME, LISTMONK_PASSWORD),
+            )
             break
         except requests.exceptions.ConnectionError:
-            print("Failed to send Listmonk campaign create request! Retrying in 60 seconds...")
+            print(
+                "Failed to send Listmonk campaign create request! Retrying in 60 seconds..."
+            )
             time.sleep(60)
 
     return response.json()["data"]["id"]
 
+
 def start_campaign(campaign_id: int) -> int:
     """Start Listmonk email campaign"""
 
-    headers = {
-        'Content-Type': 'application/json'
-    }
+    headers = {"Content-Type": "application/json"}
 
-    json_data = {
-        'status': 'running'
-    }
+    json_data = {"status": "running"}
 
     while True:
         try:
-            response = requests.put(f"{LISTMONK_URL}/api/campaigns/{campaign_id}/status",
-                                    headers=headers, json=json_data,
-                                    auth=(LISTMONK_USERNAME, LISTMONK_PASSWORD))
+            response = requests.put(
+                f"{LISTMONK_URL}/api/campaigns/{campaign_id}/status",
+                headers=headers,
+                json=json_data,
+                auth=(LISTMONK_USERNAME, LISTMONK_PASSWORD),
+            )
             break
         except requests.exceptions.ConnectionError:
-            print("Failed to send Listmonk campaign start request! Retrying in 60 seconds...")
+            print(
+                "Failed to send Listmonk campaign start request! Retrying in 60 seconds..."
+            )
             time.sleep(60)
 
     return response.status_code
+
 
 if __name__ == "__main__":
     main()
