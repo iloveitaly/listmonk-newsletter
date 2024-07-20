@@ -1,0 +1,36 @@
+name: CI
+on:
+  push:
+    branches:
+      - main
+
+env:
+  # required for `gh` cli to work
+  GH_TOKEN: ${{ secrets.github_token }}
+
+jobs:
+  build-and-publish:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Login to GitHub Container Registry
+        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Build and push Docker images
+        if: ${{ steps.changelog.outputs.skipped == 'false' }}
+        uses: iloveitaly/github-action-nixpacks@main
+        with:
+          platforms: "linux/amd64,linux/arm64"
+          push: true
+
+      - name: Sync Repository Metadata
+        uses: iloveitaly/github-actions-metadata-sync@main
+        with:
+          TOKEN: ${{ secrets.GH_PERSONAL_TOKEN }}
