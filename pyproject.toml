@@ -19,6 +19,7 @@ css-inline = "^0.14.1"
 html2text = "^2024.2.26"
 dateparser = "^1.2.0"
 backoff = "^2.2.1"
+apscheduler = "^3.10.4"
 
 
 [tool.poetry.group.dev.dependencies]
@@ -31,3 +32,6 @@ pylint = "^3.2.5"
 [build-system]
 requires = ["poetry-core"]
 build-backend = "poetry.core.masonry.api"
+
+[tool.poetry.scripts]
+listmonk-newsletter = "listmonk_newsletter:cli"
