@@ -1,9 +1,11 @@
 [tool.poetry]
 name = "listmonk-newsletter"
 version = "0.1.0"
-description = ""
+description = "Generate a newsletter digest from an rss feed and send it to a listmonk instance"
 authors = ["Michael Bianco <mike@mikebian.co>"]
 readme = "README.md"
+keywords = ["listmonk", "newsletter", "rss", "feed"]
+homepage = "https://github.com/iloveitaly/listmonk-newsletter"
 
 [tool.poetry.dependencies]
 python = "^3.12"
