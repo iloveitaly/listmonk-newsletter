@@ -1,0 +1,11 @@
+layout poetry
+
+export BLOG_URL="https://example.com"
+export LISTMONK_URL="https://listmonk.example.com"
+export LISTMONK_URL="http://listmonk.example"
+export LISTMONK_USERNAME="username"
+export LISTMONK_PASSWORD="password"
+export LISTMONK_TITLE="Latest Posts from Example"
+export LISTMONK_TEMPLATE=4
+export LISTMONK_SEND_AT="monday 5am"
+export LISTMONK_TEST_EMAILS="test@example.com"
