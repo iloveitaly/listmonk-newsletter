@@ -8,6 +8,9 @@ env:
   # required for `gh` cli to work
   GH_TOKEN: ${{ secrets.github_token }}
 
+# by default, permissions are read-only, read + write is required for git pushes
+permissions: write-all
+
 jobs:
   build-and-publish:
     runs-on: ubuntu-latest
