@@ -1,0 +1,33 @@
+[tool.poetry]
+name = "listmonk-newsletter"
+version = "0.1.0"
+description = ""
+authors = ["Michael Bianco <mike@mikebian.co>"]
+readme = "README.md"
+
+[tool.poetry.dependencies]
+python = "^3.12"
+feedparser = "^6.0.11"
+python-decouple-typed = "^3.11.0"
+click = "^8.1.7"
+requests = "^2.32.3"
+structlog = "^24.4.0"
+funcy-pipe = "^0.11.0"
+lxml = "^5.2.2"
+jinja2 = "^3.1.4"
+css-inline = "^0.14.1"
+html2text = "^2024.2.26"
+dateparser = "^1.2.0"
+backoff = "^2.2.1"
+
+
+[tool.poetry.group.dev.dependencies]
+black = "^24.4.2"
+pretty-traceback = "^2023.1020"
+isort = "^5.13.2"
+pyright = "^1.1.372"
+pylint = "^3.2.5"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
