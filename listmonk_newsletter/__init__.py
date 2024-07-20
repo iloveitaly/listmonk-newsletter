@@ -1,14 +1,21 @@
-import time
 import os
-from pathlib import Path
 import re
+import time
 from collections.abc import Iterator
+from pathlib import Path
+
 import backoff
-import requests
+import click
+import css_inline
+import dateparser
 import feedparser
-from lxml import etree
-from decouple import Csv, config
+import funcy_pipe as fp
+import html2text
+import jinja2
+import requests
 import structlog
+from decouple import Csv, config
+from lxml import etree
 
 # side effects! for append_text
 import listmonk_newsletter.pathlib_extension
@@ -86,11 +93,6 @@ def get_og_image(url: str) -> str | None:
 
     if og_image is not None:
         return og_image.get("content")
-
-
-import html2text
-
-import dateparser
 
 
 @backoff.on_exception(
@@ -174,12 +176,6 @@ def start_campaign(campaign_id: int) -> bool:
     return response.status_code == 200
 
 
-import jinja2
-
-
-import css_inline
-
-
 def render_email_content(new_entries: list[feedparser.FeedParserDict]) -> str:
     # Create a Jinja2 environment and load the template file
     env = jinja2.Environment(
@@ -194,9 +190,6 @@ def render_email_content(new_entries: list[feedparser.FeedParserDict]) -> str:
     inlined_content = inliner.inline(rendered_content)
 
     return inlined_content
-
-
-import funcy_pipe as fp
 
 
 def generate_campaign():
@@ -245,9 +238,6 @@ def generate_campaign():
         new_entries | fp.pluck_attr("link") | fp.map(lambda t: "\n" + t) | fp.map(
             FEED_ENTRY_LINKS_FILE.append_text
         ) | fp.to_list()
-
-
-import click
 
 
 @click.command()

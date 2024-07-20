@@ -35,3 +35,7 @@ build-backend = "poetry.core.masonry.api"
 
 [tool.poetry.scripts]
 listmonk-newsletter = "listmonk_newsletter:cli"
+
+[tool.isort]
+profile = "black"
+float_to_top = true
