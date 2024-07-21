@@ -186,7 +186,7 @@ def generate_campaign():
     feed: feedparser.FeedParserDict = feedparser.parse(RSS_URL)
 
     # strange way to report an error...
-    if feed["bozo_exception"]:
+    if "bozo_exception" in feed:
         log.error("Feed parsing error", error=feed["bozo_exception"])
         return
 
