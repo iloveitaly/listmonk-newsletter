@@ -24,13 +24,15 @@ from listmonk_newsletter.util import configure_logger
 log = structlog.get_logger()
 configure_logger()
 
-PROGRAM_DIRECTORY = Path(__file__).parent.resolve()
+ROOT_DIRECTORY = Path(__file__).parent.resolve()
+DATA_DIRECTORY = ROOT_DIRECTORY / "data"
+
+FEED_ENTRY_LINKS_FILE = DATA_DIRECTORY / "feed_entry_links.txt"
+CONTENT_TEMPLATE_FILE = DATA_DIRECTORY / "template.j2"
 
 # Configuration variables
 ROOT_URL = config("BLOG_URL", cast=str)
 RSS_URL = f"{ROOT_URL}/feed/"
-FEED_ENTRY_LINKS_FILE = PROGRAM_DIRECTORY / "feed_entry_links.txt"
-CONTENT_TEMPLATE_FILE = PROGRAM_DIRECTORY / "template.j2"
 
 DRY_RUN = True  # Use this for testing, campaigns will be created but no emails will be sent out
 
@@ -43,7 +45,7 @@ LISTMONK_TEMPLATE = config("LISTMONK_TEMPLATE", cast=int, default=None)
 LISTMONK_SEND_AT = config("LISTMONK_SEND_AT", cast=str, default=None)
 LISTMONK_TEST_EMAILS = config("LISTMONK_TEST_EMAILS", cast=Csv(), default=None)
 
-BACKOFF_LIMIT = 1
+BACKOFF_LIMIT = 8
 
 LISTMONK_REQUEST_PARAMS = {
     "headers": {"Content-Type": "application/json;charset=utf-8"},
@@ -78,12 +80,12 @@ def read_feed_entry_links_file() -> list[str]:
 
 @backoff.on_exception(
     backoff.expo,
-    # highest exception up the execption hierarchy
+    # highest exception up the exception hierarchy
     (requests.exceptions.RequestException),
     max_tries=BACKOFF_LIMIT,
 )
 def get_og_image(url: str) -> str | None:
-    """Get Open Graph cover image URL from given HTML"""
+    "Pull the image tied to a blog post"
 
     html = requests.get(url).content
 
@@ -97,7 +99,6 @@ def get_og_image(url: str) -> str | None:
 
 @backoff.on_exception(
     backoff.expo,
-    # highest exception up the execption hierarchy
     (requests.exceptions.RequestException),
     max_tries=BACKOFF_LIMIT,
 )
@@ -139,7 +140,6 @@ def create_campaign(title: str, body: str) -> int:
 # TODO this is broken on the listmonk side of things
 @backoff.on_exception(
     backoff.expo,
-    # highest exception up the execption hierarchy
     (requests.exceptions.RequestException),
     max_tries=BACKOFF_LIMIT,
 )
@@ -160,7 +160,6 @@ def send_tests(campaign_id: int, emails: list[str]):
 
 @backoff.on_exception(
     backoff.expo,
-    # highest exception up the execption hierarchy
     (requests.exceptions.RequestException),
     max_tries=BACKOFF_LIMIT,
 )
@@ -179,7 +178,7 @@ def start_campaign(campaign_id: int) -> bool:
 def render_email_content(new_entries: list[feedparser.FeedParserDict]) -> str:
     # Create a Jinja2 environment and load the template file
     env = jinja2.Environment(
-        loader=jinja2.FileSystemLoader(searchpath=str(PROGRAM_DIRECTORY)),
+        loader=jinja2.FileSystemLoader(searchpath=str(ROOT_DIRECTORY)),
         autoescape=jinja2.select_autoescape(["html", "xml"]),
     )
 
@@ -233,6 +232,8 @@ def generate_campaign():
         # TODO this is currently broken on the listmonk side
         # if LISTMONK_TEST_EMAILS:
         #     send_tests(campaign_id, LISTMONK_TEST_EMAILS)
+
+        log.info("campaign scheduled successfully, updating inspected feed links")
 
         # TODO should really have a `exec()` or something in fp for this use case
         new_entries | fp.pluck_attr("link") | fp.map(lambda t: "\n" + t) | fp.map(
