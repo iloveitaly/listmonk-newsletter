@@ -3,4 +3,4 @@
 __pycache__
 
 .envrc
-feed_entry_links.txt
+data/processed_links.txt

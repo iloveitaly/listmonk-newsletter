@@ -24,10 +24,10 @@ from listmonk_newsletter.util import configure_logger
 log = structlog.get_logger()
 configure_logger()
 
-ROOT_DIRECTORY = Path(__file__).parent.resolve()
+ROOT_DIRECTORY = Path(__file__).parent.parent.resolve()
 DATA_DIRECTORY = ROOT_DIRECTORY / "data"
 
-FEED_ENTRY_LINKS_FILE = DATA_DIRECTORY / "feed_entry_links.txt"
+FEED_ENTRY_LINKS_FILE = DATA_DIRECTORY / "processed_links.txt"
 CONTENT_TEMPLATE_FILE = DATA_DIRECTORY / "template.j2"
 
 # Configuration variables
@@ -68,6 +68,7 @@ def populate_preexisting_entries(entry_links: list[str]) -> bool:
         )
 
         FEED_ENTRY_LINKS_FILE.write_text("\n".join(entry_links), encoding="utf-8")
+
         return True
 
     log.info("Checking for new feed entries...")
@@ -182,7 +183,7 @@ def render_email_content(new_entries: list[feedparser.FeedParserDict]) -> str:
         autoescape=jinja2.select_autoescape(["html", "xml"]),
     )
 
-    template = env.get_template(str("template.j2"))
+    template = env.get_template(str(CONTENT_TEMPLATE_FILE.relative_to(ROOT_DIRECTORY)))
     rendered_content = template.render(entries=new_entries)
 
     inliner = css_inline.CSSInliner(keep_style_tags=True)
