@@ -126,7 +126,6 @@ def create_campaign(title: str, body: str) -> int:
     return response.json()["data"]["id"]
 
 
-# TODO this is broken on the listmonk side of things
 @backoff.on_exception(
     backoff.expo,
     (requests.exceptions.RequestException),

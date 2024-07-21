@@ -28,7 +28,8 @@ You'll see this in the example template as:
 
 ## TODO
 
-- [ ] report test email bug to listmonk
+- [ ] report test email bug to listmonk https://github.com/knadh/listmonk/issues/1948
+- [ ] click tracking when sending HTML content through the API doesn't seem to work
 - [ ] add cli switches for env vars
 - [ ] list selection should be configurable
 - [ ] gpt-powered titles and summaries
