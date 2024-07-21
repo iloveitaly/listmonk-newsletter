@@ -55,11 +55,9 @@ def fetch_rss() -> feedparser.FeedParserDict | None:
 
 
 def populate_preexisting_entries(entry_links: list[str]) -> bool:
-    """Don't process feed entries that existed before first run of rss2newsletter"""
-
     if not os.path.exists(FEED_ENTRY_LINKS_FILE):
         log.info(
-            "Feed entry links file does not exist:"
+            "Feed entry links file does not exist: "
             f"{FEED_ENTRY_LINKS_FILE}. Populating it for the first time..."
         )
 
@@ -67,7 +65,6 @@ def populate_preexisting_entries(entry_links: list[str]) -> bool:
 
         return True
 
-    log.info("Checking for new feed entries...")
     return False
 
 
@@ -203,6 +200,10 @@ def generate_campaign():
         return
 
     entry_links_last_update = read_feed_entry_links_file()
+
+    log.info(
+        "checking for new feed entries", existing_entries=len(entry_links_last_update)
+    )
 
     def add_image_link(entry):
         og_image = get_og_image(entry.link)
