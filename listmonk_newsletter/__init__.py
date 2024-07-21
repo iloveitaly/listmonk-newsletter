@@ -49,11 +49,6 @@ LISTMONK_REQUEST_PARAMS = {
 }
 
 
-def fetch_rss() -> feedparser.FeedParserDict | None:
-    feed = feedparser.parse(RSS_URL)
-    return feed
-
-
 def populate_preexisting_entries(entry_links: list[str]) -> bool:
     if not os.path.exists(FEED_ENTRY_LINKS_FILE):
         log.info(
@@ -186,7 +181,14 @@ def render_email_content(new_entries: list[feedparser.FeedParserDict]) -> str:
 
 
 def generate_campaign():
-    feed = fetch_rss()
+    log.info("pulling feed", feed_url=RSS_URL)
+
+    feed: feedparser.FeedParserDict = feedparser.parse(RSS_URL)
+
+    # strange way to report an error...
+    if feed["bozo_exception"]:
+        log.error("Feed parsing error", error=feed["bozo_exception"])
+        return
 
     if not feed:
         return
@@ -202,7 +204,9 @@ def generate_campaign():
     entry_links_last_update = read_feed_entry_links_file()
 
     log.info(
-        "checking for new feed entries", existing_entries=len(entry_links_last_update)
+        "checking for new feed entries",
+        existing_entries=len(entry_links_last_update),
+        feed_entries=len(feed.entries),
     )
 
     def add_image_link(entry):
