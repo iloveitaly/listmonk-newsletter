@@ -1,11 +1,23 @@
 layout poetry
 
-export BLOG_URL="https://example.com"
-export LISTMONK_URL="https://listmonk.example.com"
-export LISTMONK_URL="http://listmonk.example"
+
+export LISTMONK_URL="https://listmonk.app"
 export LISTMONK_USERNAME="username"
-export LISTMONK_PASSWORD="password"
+export LISTMONK_PASSWORD = "password"
+
+export RSS_URL = "https://blog.com/feed"
+
+# which listmonk template to use, should be an empty template
+export LISTMONK_TEMPLATE = 4
+
+# title to use for the campaign
 export LISTMONK_TITLE="Latest Posts from Example"
-export LISTMONK_TEMPLATE=4
-export LISTMONK_SEND_AT="monday 5am"
-export LISTMONK_TEST_EMAILS="test@example.com"
+
+# optional: when to send the campaign after it's been created
+export LISTMONK_SEND_AT = "monday 5am"
+
+# list of emails to send test campaigns to
+export LISTMONK_TEST_EMAILS="test@example.com,test2@example.com"
+
+# cron-style schedule for when to generate the newsletter
+export SCHEDULE="0 6 * * 1"

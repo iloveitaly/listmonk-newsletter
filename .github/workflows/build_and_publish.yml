@@ -5,6 +5,7 @@ on:
       - main
     paths-ignore:
       - "README.md"
+      - ".envrc-example"
 
 env:
   # required for `gh` cli to work

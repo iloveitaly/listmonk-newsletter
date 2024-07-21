@@ -1,0 +1,25 @@
+services:
+  listmonk-newsletter:
+    image: ghcr.io/iloveitaly/listmonk-newsletter:latest
+    restart: always
+    env_file:
+      - env-listmonk-credentials
+    environment:
+      - LISTMONK_URL="https://listmonk.app"
+      - LISTMONK_USERNAME="username"
+      - LISTMONK_PASSWORD="password"
+      - RSS_URL="https://blog.com/feed"
+      - LISTMONK_TEMPLATE=4
+      - LISTMONK_TITLE="Latest Posts from Example"
+      - LISTMONK_SEND_AT="monday 5am"
+      - LISTMONK_TEST_EMAILS="test@example.com,test2@example.com"
+      - SCHEDULE="0 6 * * 1"
+      - SCHEDULE=0 7 * * *
+      # the container will *not* assume the TZ of the host without this
+      # make sure your host has this set
+      - TZ=${TZ}
+    volumes:
+      - listmonk-newsletter-data:/app/data
+
+volumes:
+  listmonk-newsletter-data:

@@ -30,11 +30,7 @@ DATA_DIRECTORY = ROOT_DIRECTORY / "data"
 FEED_ENTRY_LINKS_FILE = DATA_DIRECTORY / "processed_links.txt"
 CONTENT_TEMPLATE_FILE = DATA_DIRECTORY / "template.j2"
 
-# Configuration variables
-ROOT_URL = config("BLOG_URL", cast=str)
-RSS_URL = f"{ROOT_URL}/feed/"
-
-DRY_RUN = True  # Use this for testing, campaigns will be created but no emails will be sent out
+RSS_URL = config("RSS_URL", cast=str)
 
 LISTMONK_URL = config("LISTMONK_URL", cast=str)
 LISTMONK_USERNAME = config("LISTMONK_USERNAME", cast=str)
