@@ -26,6 +26,8 @@ You'll see this in the example template as:
 {% raw %}{{ UnsubscribeURL }}{% endraw %}
 ```
 
+Another interesting listmonk quirk is if you want link tracking, you need to add `@TrackLink` to the end of the URL. If you pass links to the campaign API without this, they will not be tracked.
+
 ## TODO
 
 - [ ] report test email bug to listmonk https://github.com/knadh/listmonk/issues/1948
