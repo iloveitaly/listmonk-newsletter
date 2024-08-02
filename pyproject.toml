@@ -28,7 +28,7 @@ apscheduler = "^3.10.4"
 black = "^24.4.2"
 pretty-traceback = "^2023.1020"
 isort = "^5.13.2"
-pyright = "^1.1.372"
+pyright = "^1.1.374"
 pylint = "^3.2.6"
 
 [build-system]
