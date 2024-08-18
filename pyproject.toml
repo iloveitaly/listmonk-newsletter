@@ -26,7 +26,6 @@ apscheduler = "^3.10.4"
 
 [tool.poetry.group.dev.dependencies]
 black = "^24.8.0"
-pretty-traceback = "^2024.1021"
 isort = "^5.13.2"
 pyright = "^1.1.376"
 pylint = "^3.2.6"

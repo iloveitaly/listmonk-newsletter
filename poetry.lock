@@ -685,20 +685,6 @@ test = ["appdirs (==1.4.4)", "covdefaults (>=2.3)", "pytest (>=7.4.3)", "pytest-
 type = ["mypy (>=1.8)"]
 
 [[package]]
-name = "pretty-traceback"
-version = "2024.1021"
-description = "Human readable stacktraces."
-optional = false
-python-versions = ">=2.7"
-files = [
-    {file = "pretty-traceback-2024.1021.tar.gz", hash = "sha256:08c53c7737a315e5b17646340f1620c1b9c7ef3cbbc195ac05e50d0b131101f7"},
-    {file = "pretty_traceback-2024.1021-py2.py3-none-any.whl", hash = "sha256:c1f351b9e3fce79fb4343a6509a5f2bad16084356c63fe85d3f6bbb0486dd94a"},
-]
-
-[package.dependencies]
-colorama = {version = ">=0.4", markers = "python_version >= \"3.6\""}
-
-[[package]]
 name = "pylint"
 version = "3.2.6"
 description = "python code static checker"
@@ -981,4 +967,4 @@ zstd = ["zstandard (>=0.18.0)"]
 [metadata]
 lock-version = "2.0"
 python-versions = "^3.12"
-content-hash = "620b5dbec259eb8e9be59a3cbb34ab97272e0ce82bf7bae37eaf79ae6929e54e"
+content-hash = "85c716a1681ffe9e229b9c32a6942880e609a5996ac74063bf5c5acc43b5df7b"
