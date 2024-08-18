@@ -18,7 +18,7 @@ from decouple import Csv, config
 from lxml import etree
 
 # side effects! for append_text
-import listmonk_newsletter.pathlib_extension
+import listmonk_newsletter.pathlib_extension as _
 from listmonk_newsletter.util import configure_logger
 
 log = structlog.get_logger()

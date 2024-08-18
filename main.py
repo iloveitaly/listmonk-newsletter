@@ -4,9 +4,12 @@ from apscheduler.schedulers.background import BlockingScheduler
 from apscheduler.triggers.cron import CronTrigger
 
 from listmonk_newsletter import generate_campaign
+from listmonk_newsletter.internet import wait_for_internet_connection
 
 
 def job():
+    wait_for_internet_connection()
+
     generate_campaign()
 
 
