@@ -190,6 +190,7 @@ def generate_campaign():
         return
 
     if not feed:
+        log.error("feed is empty")
         return
 
     # Sort feed entries chronologically
