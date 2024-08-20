@@ -33,8 +33,3 @@ jobs:
         with:
           platforms: "linux/amd64,linux/arm64"
           push: true
-
-      - name: Sync Repository Metadata
-        uses: iloveitaly/github-actions-metadata-sync@main
-        with:
-          TOKEN: ${{ secrets.GH_PERSONAL_TOKEN }}
