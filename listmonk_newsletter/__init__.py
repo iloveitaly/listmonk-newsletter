@@ -1,7 +1,4 @@
 import os
-import re
-import time
-from collections.abc import Iterator
 from pathlib import Path
 
 import backoff
@@ -19,7 +16,8 @@ from lxml import etree
 
 # side effects! for append_text
 import listmonk_newsletter.pathlib_extension as _
-from listmonk_newsletter.util import configure_logger
+
+from .util import configure_logger
 
 log = structlog.get_logger()
 configure_logger()
@@ -108,6 +106,7 @@ def create_campaign(title: str, body: str) -> int:
     json_data = {
         "name": title,
         "subject": title,
+        # TODO list reference should be dynamic
         "lists": [1],
         "content_type": "html",
         "body": body,
@@ -217,13 +216,14 @@ def generate_campaign():
     new_entries = (
         feed.entries
         | fp.filter(lambda e: e.link not in entry_links_last_update)
-        | fp.map(add_image_link)
-        | fp.to_list()
+        | fp.lmap(add_image_link)
     )
 
     if not new_entries:
         log.info("no new entries found")
         return
+
+    log.info("new entries found", count=len(new_entries))
 
     content = render_email_content(new_entries)
     campaign_id = create_campaign(LISTMONK_TITLE, content)
@@ -232,15 +232,16 @@ def generate_campaign():
 
     if send_successful:
         # TODO this is currently broken on the listmonk side
+        # TODO this isn't going to be fixed, should fix the payload being sent tot he
         # if LISTMONK_TEST_EMAILS:
         #     send_tests(campaign_id, LISTMONK_TEST_EMAILS)
 
         log.info("campaign scheduled successfully, updating inspected feed links")
 
         # TODO should really have a `exec()` or something in fp for this use case
-        new_entries | fp.pluck_attr("link") | fp.map(lambda t: "\n" + t) | fp.map(
+        new_entries | fp.pluck_attr("link") | fp.map(lambda t: "\n" + t) | fp.lmap(
             FEED_ENTRY_LINKS_FILE.append_text
-        ) | fp.to_list()
+        )
 
 
 @click.command()
