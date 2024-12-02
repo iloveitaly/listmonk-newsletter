@@ -21,7 +21,7 @@ css-inline = "^0.14.3"
 html2text = "^2024.2.26"
 dateparser = "^1.2.0"
 backoff = "^2.2.1"
-apscheduler = "^3.10.4"
+apscheduler = "^3.11.0"
 
 
 [tool.poetry.group.dev.dependencies]
