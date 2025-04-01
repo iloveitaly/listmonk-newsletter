@@ -27,7 +27,7 @@ apscheduler = "^3.11.0"
 [tool.poetry.group.dev.dependencies]
 black = "^25.1.0"
 isort = "^6.0.1"
-pyright = "^1.1.396"
+pyright = "^1.1.398"
 pylint = "^3.3.3"
 
 [build-system]
