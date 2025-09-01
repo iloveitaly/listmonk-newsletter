@@ -28,7 +28,7 @@ apscheduler = "^3.11.0"
 black = "^25.1.0"
 isort = "^6.0.1"
 pyright = "^1.1.403"
-pylint = "^3.3.7"
+pylint = "^3.3.8"
 
 [build-system]
 requires = ["poetry-core"]
