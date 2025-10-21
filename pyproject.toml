@@ -1,42 +1,34 @@
-[tool.poetry]
+[project]
+authors = [{ "name" = "Michael Bianco", "email" = "mike@mikebian.co" }]
 name = "listmonk-newsletter"
 version = "0.1.0"
 description = "Generate a newsletter digest from an rss feed and send it to a listmonk instance"
-authors = ["Michael Bianco <mike@mikebian.co>"]
 readme = "README.md"
 keywords = ["listmonk", "newsletter", "rss", "feed"]
-homepage = "https://github.com/iloveitaly/listmonk-newsletter"
+urls = { "Repository" = "https://github.com/iloveitaly/listmonk-newsletter" }
+dependencies = [
+    "apscheduler == 3.11.0",
+    "backoff == 2.2.1",
+    "click == 8.3.0",
+    "css-inline == 0.17.0",
+    "dateparser == 1.2.2",
+    "feedparser == 6.0.11",
+    "funcy-pipe == 0.13.0",
+    "html2text == 2025.4.15",
+    "jinja2 == 3.1.6",
+    "lxml == 6.0.2",
+    "python-decouple-typed == 3.11.0",
+    "requests == 2.32.5",
+    "structlog == 25.4.0",
+]
 
-[tool.poetry.dependencies]
-python = "^3.12"
-feedparser = "^6.0.12"
-python-decouple-typed = "^3.11.0"
-click = "^8.3.0"
-requests = "^2.32.5"
-structlog = "^25.5.0"
-funcy-pipe = "^0.13.0"
-lxml = "^6.0.2"
-jinja2 = "^3.1.6"
-css-inline = "^0.17.0"
-html2text = "^2025.4.15"
-dateparser = "^1.2.2"
-backoff = "^2.2.1"
-apscheduler = "^3.11.1"
-
-
-[tool.poetry.group.dev.dependencies]
-black = "^25.9.0"
-isort = "^6.1.0"
-pyright = "^1.1.405"
-pylint = "^4.0.2"
-
-[build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
-
-[tool.poetry.scripts]
+[project.scripts]
 listmonk-newsletter = "listmonk_newsletter:cli"
 
-[tool.isort]
-profile = "black"
-float_to_top = true
+[build-system]
+requires = ["uv_build>=0.8.11,<0.9.0"]
+build-backend = "uv_build"
+
+[tool.uv.build-backend]
+# avoids the src/ directory structure
+module-root = ""
