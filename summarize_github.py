@@ -56,7 +56,8 @@ def fetch_releases(username: str, last_checked: Instant, repos: list[dict]) -> l
             'date': latest['published_at'],
             'name': latest['name'] or latest['tag_name'],
             'repo_url': repo['html_url'],
-            'url': latest['html_url']
+            'url': latest['html_url'],
+            'description': latest['body'] if latest['body'] else "No description"
         })
     log.info("releases fetched", count=len(releases), username=username)
     return releases
@@ -91,12 +92,31 @@ def fetch_github_activity(username: str, last_checked: str) -> dict:
 def generate_summary_prompt(activity: dict) -> str:
     log.debug("generating summary prompt")
     template_str = """
-Summarize the following GitHub activity for my personal email newsletter. Keep the tone friendly, casual yet professional, and highlight key updates in a concise manner. Include sections for new releases and new repositories. If there are no updates in a section, note that explicitly.
+
+You are an expert newsletter writer specializing in concise and engaging summaries of GitHub activity:
+
+* Summarize the following GitHub activity for my personal email newsletter.
+* Keep the tone friendly, casual yet professional, and highlight key updates in a concise manner.
+* Include sections for new releases and new repositories. If there are no updates in a section, note that explicitly.
+* If there is an entry in new releases and new repositories, omit it from new releases.
+* Do not include release dates in the summary
+* You can assume that elsewhere in the newsletter we've already introduced the user to the newsletter and added a signoff.
+  * Do not include general information like "Hey there, newsletter crew! Here's the latest scoop on my GitHub activity, packed with exciting updates from the past couple of months."
+* Write an intro that gives a 1-2 sentence overview of the activity.
+* Avoid fluff and filler phrases.
+* Include links to the
+Below is the GitHub activity data to summarize.
+
+---
 
 ## New Releases
 {% if activity.releases %}
 {% for release in activity.releases %}
 - [{{ release.name }}]({{ release.url }}) in Repository: [{{ release.repo }}]({{ release.repo_url }}) (Tag: {{ release.tag }}), Published: {{ release.date }}
+  Description:
+  ```markdown
+  {{ release.description }}
+  ```
 {% endfor %}
 {% else %}
 - No new releases.
@@ -121,11 +141,16 @@ Provide a summary that is clear, concise, and suitable for a newsletter audience
 @click.command()
 @click.option('--username', default="iloveitaly")
 @click.option('--days', default=60, type=int)
-def main(username: str, days: int):
+@click.option('--output-file', default=None, type=str)
+def main(username: str, days: int, output_file: str | None):
     last_checked = Instant.now().to_system_tz().add(days=-days).format_iso()
     activity = fetch_github_activity(username, last_checked)
     prompt = generate_summary_prompt(activity)
-    print(prompt)
+    if output_file:
+        with open(output_file, 'w') as f:
+            f.write(prompt)
+    else:
+        print(prompt)
 
 if __name__ == "__main__":
     main()
