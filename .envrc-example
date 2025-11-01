@@ -1,5 +1,4 @@
-layout poetry
-
+layout uv
 
 export LISTMONK_URL="https://listmonk.app"
 export LISTMONK_USERNAME="username"
