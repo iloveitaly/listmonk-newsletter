@@ -1,11 +1,12 @@
 import os
+
+import click
+import funcy as f
 import requests
-from jinja2 import Template
 import structlog
+from jinja2 import Template
 from structlog_config import configure_logger
 from whenever import Instant
-import funcy as f
-import click
 
 log = configure_logger()
 
@@ -32,7 +33,10 @@ def fetch_all_repos(username: str) -> list[dict]:
         data = github_api_get(url)
         if not data:
             break
-        repos.extend(data)
+        repos.extend([
+            repo for repo in data
+            if not repo.get('fork') and (repo.get('description') or '').strip()
+        ])
         page += 1
     log.info("all repos fetched", count=len(repos), username=username)
     return repos
@@ -104,7 +108,7 @@ You are an expert newsletter writer specializing in concise and engaging summari
   * Do not include general information like "Hey there, newsletter crew! Here's the latest scoop on my GitHub activity, packed with exciting updates from the past couple of months."
 * Write an intro that gives a 1-2 sentence overview of the activity.
 * Avoid fluff and filler phrases.
-* Include links to the
+
 Below is the GitHub activity data to summarize.
 
 ---
