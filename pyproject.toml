@@ -9,7 +9,7 @@ homepage = "https://github.com/iloveitaly/listmonk-newsletter"
 
 [tool.poetry.dependencies]
 python = "^3.12"
-feedparser = "^6.0.11"
+feedparser = "^6.0.12"
 python-decouple-typed = "^3.11.0"
 click = "^8.3.0"
 requests = "^2.32.5"
