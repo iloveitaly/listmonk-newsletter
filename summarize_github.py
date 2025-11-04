@@ -1,9 +1,8 @@
 import os
+from pathlib import Path
 
 import click
-import funcy as f
 import requests
-import structlog
 from jinja2 import Template
 from structlog_config import configure_logger
 from whenever import Instant
@@ -12,10 +11,10 @@ log = configure_logger()
 
 def get_headers() -> dict[str, str]:
     token = os.getenv("GITHUB_TOKEN")
-    return f.compact({
-        "Accept": "application/vnd.github.v3+json",
-        "Authorization": f"token {token}" if token else None
-    })
+    headers = {"Accept": "application/vnd.github.v3+json"}
+    if token:
+        headers["Authorization"] = f"token {token}"
+    return headers
 
 def github_api_get(url: str) -> list | dict:
     headers = get_headers()
@@ -93,8 +92,23 @@ def fetch_github_activity(username: str, last_checked: str) -> dict:
     log.info("github activity fetched", username=username)
     return activity
 
+def filter_releases_for_new_repos(activity: dict) -> dict:
+    new_repo_names = {repo['name'] for repo in activity.get('new_repos', [])}
+    filtered_releases = [
+        release for release in activity.get('releases', [])
+        if release['repo'] not in new_repo_names
+    ]
+    removed = len(activity.get('releases', [])) - len(filtered_releases)
+    if removed:
+        log.info("filtered releases overlapping new repos", removed=removed)
+    updated_activity = dict(activity)
+    updated_activity['releases'] = filtered_releases
+    return updated_activity
+
+
 def generate_summary_prompt(activity: dict) -> str:
     log.debug("generating summary prompt")
+    filtered_activity = filter_releases_for_new_repos(activity)
     template_str = """
 
 You are an expert newsletter writer specializing in concise and engaging summaries of GitHub activity:
@@ -138,7 +152,7 @@ Below is the GitHub activity data to summarize.
 Provide a summary that is clear, concise, and suitable for a newsletter audience.
 """
     template = Template(template_str)
-    prompt = template.render(activity=activity)
+    prompt = template.render(activity=filtered_activity)
     log.debug("summary prompt generated")
     return prompt
 
@@ -151,10 +165,9 @@ def main(username: str, days: int, output_file: str | None):
     activity = fetch_github_activity(username, last_checked)
     prompt = generate_summary_prompt(activity)
     if output_file:
-        with open(output_file, 'w') as f:
-            f.write(prompt)
+        Path(output_file).write_text(prompt)
     else:
-        print(prompt)
+        click.echo(prompt)
 
 if __name__ == "__main__":
     main()
