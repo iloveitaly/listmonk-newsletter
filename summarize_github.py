@@ -1,8 +1,8 @@
-import os
 from pathlib import Path
 
 import click
 import requests
+from decouple import config
 from jinja2 import Template
 from structlog_config import configure_logger
 from whenever import Instant
@@ -10,7 +10,7 @@ from whenever import Instant
 log = configure_logger()
 
 def get_headers() -> dict[str, str]:
-    token = os.getenv("GITHUB_TOKEN")
+    token = config("GITHUB_TOKEN", default=None)
     headers = {"Accept": "application/vnd.github.v3+json"}
     if token:
         headers["Authorization"] = f"token {token}"
@@ -21,6 +21,42 @@ def github_api_get(url: str) -> list | dict:
     resp = requests.get(url, headers=headers)
     resp.raise_for_status()
     return resp.json()
+
+def summarize_with_gemini(prompt: str) -> str:
+    api_key = config("GEMINI_API_KEY", default=None)
+    if not api_key:
+        raise RuntimeError("GEMINI_API_KEY must be set when using --summarize")
+
+    model = config("GEMINI_MODEL", default="gemini-1.5-flash-latest")
+    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
+    log.info("requesting gemini summary", model=model)
+
+    response = requests.post(
+        f"{url}?key={api_key}",
+        json={"contents": [{"parts": [{"text": prompt}]}]},
+        timeout=30,
+    )
+    response.raise_for_status()
+
+    data = response.json()
+    try:
+        candidates = data["candidates"]
+        if not candidates:
+            raise ValueError("no candidates in gemini response")
+
+        parts = candidates[0]["content"]["parts"]
+        if not parts:
+            raise ValueError("no parts in gemini response")
+
+        text = parts[0].get("text")
+        if not text:
+            raise ValueError("no text in gemini response")
+    except (KeyError, TypeError) as error:
+        raise ValueError("unexpected gemini response structure") from error
+
+    log.info("gemini summary received")
+    return text
+
 
 def fetch_all_repos(username: str) -> list[dict]:
     log.info("fetching all repos", username=username)
@@ -160,14 +196,29 @@ Provide a summary that is clear, concise, and suitable for a newsletter audience
 @click.option('--username', default="iloveitaly")
 @click.option('--days', default=60, type=int)
 @click.option('--output-file', default=None, type=str)
-def main(username: str, days: int, output_file: str | None):
+@click.option('--summarize', is_flag=True, help="Send the prompt to Gemini and output the summary")
+def main(
+    username: str,
+    days: int,
+    output_file: str | None,
+    summarize: bool,
+):
     last_checked = Instant.now().to_system_tz().add(days=-days).format_iso()
     activity = fetch_github_activity(username, last_checked)
     prompt = generate_summary_prompt(activity)
+    if summarize:
+        summary = summarize_with_gemini(prompt)
+        if output_file:
+            Path(output_file).write_text(summary)
+        else:
+            click.echo(summary)
+        return
+
     if output_file:
         Path(output_file).write_text(prompt)
-    else:
-        click.echo(prompt)
+        return
+
+    click.echo(prompt)
 
 if __name__ == "__main__":
     main()
