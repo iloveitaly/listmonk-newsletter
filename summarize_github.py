@@ -138,11 +138,16 @@ You are an expert newsletter writer specializing in concise and engaging summari
 * Keep the tone friendly, casual yet professional, and highlight key updates in a concise manner.
 * Include sections for new releases and new repositories. If there are no updates in a section, note that explicitly.
 * If there is an entry in new releases and new repositories, omit it from new releases.
-* Do not include release dates in the summary
+* Do not include release dates in the summary.
+* Link to the repositories and releases using markdown format.
 * You can assume that elsewhere in the newsletter we've already introduced the user to the newsletter and added a signoff.
   * Do not include general information like "Hey there, newsletter crew! Here's the latest scoop on my GitHub activity, packed with exciting updates from the past couple of months."
 * Write an intro that gives a 1-2 sentence overview of the activity.
 * Avoid fluff and filler phrases.
+* `## New Projects` and `## New Releases` are the section headers to use.
+* No horizontal lines.
+
+Write a summary that is clear, concise, and suitable for a newsletter audience.
 
 Below is the GitHub activity data to summarize.
 
@@ -169,8 +174,6 @@ Below is the GitHub activity data to summarize.
 {% else %}
 - No new repositories.
 {% endif %}
-
-Provide a summary that is clear, concise, and suitable for a newsletter audience.
 """
     template = Template(template_str)
     prompt = template.render(activity=filtered_activity)
