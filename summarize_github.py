@@ -5,7 +5,8 @@ import requests
 from decouple import config
 from jinja2 import Template
 from pydantic_ai import Agent
-from pydantic_ai.models.google import GoogleGenerativeAI
+from pydantic_ai.models.google import GoogleModel
+from pydantic_ai.providers.google import GoogleProvider
 from structlog_config import configure_logger
 from whenever import Instant
 
@@ -25,22 +26,21 @@ def github_api_get(url: str) -> list | dict:
     return resp.json()
 
 def summarize_with_gemini(prompt: str) -> str:
-    api_key = config("GEMINI_API_KEY", default=None)
+    api_key = config("GOOGLE_API_KEY", default=None)
     if not api_key:
-        raise RuntimeError("GEMINI_API_KEY must be set when using --summarize")
+        raise RuntimeError("GOOGLE_API_KEY must be set when using --summarize")
 
-    model = config("GEMINI_MODEL", default="gemini-1.5-flash-latest")
-    log.info("requesting gemini summary", model=model)
+    model_name = config("GEMINI_MODEL", default="gemini-flash-latest")
+    log.info("requesting gemini summary", model=model_name)
 
-    agent = Agent(
-        GoogleGenerativeAI(api_key=api_key, model=model),
-        result_type=str,
-    )
+    provider = GoogleProvider(api_key=api_key)
+    model = GoogleModel(model_name, provider=provider)
+    agent = Agent(model, output_type=str)
 
     result = agent.run_sync(prompt)
 
     log.info("gemini summary received")
-    return result.data
+    return result.output
 
 
 def fetch_all_repos(username: str) -> list[dict]:
