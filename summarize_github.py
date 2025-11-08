@@ -4,6 +4,8 @@ import click
 import requests
 from decouple import config
 from jinja2 import Template
+from pydantic_ai import Agent
+from pydantic_ai.models.google import GoogleGenerativeAI
 from structlog_config import configure_logger
 from whenever import Instant
 
@@ -28,34 +30,17 @@ def summarize_with_gemini(prompt: str) -> str:
         raise RuntimeError("GEMINI_API_KEY must be set when using --summarize")
 
     model = config("GEMINI_MODEL", default="gemini-1.5-flash-latest")
-    url = f"https://generativelanguage.googleapis.com/v1beta/models/{model}:generateContent"
     log.info("requesting gemini summary", model=model)
 
-    response = requests.post(
-        f"{url}?key={api_key}",
-        json={"contents": [{"parts": [{"text": prompt}]}]},
-        timeout=30,
+    agent = Agent(
+        GoogleGenerativeAI(api_key=api_key, model=model),
+        result_type=str,
     )
-    response.raise_for_status()
 
-    data = response.json()
-    try:
-        candidates = data["candidates"]
-        if not candidates:
-            raise ValueError("no candidates in gemini response")
-
-        parts = candidates[0]["content"]["parts"]
-        if not parts:
-            raise ValueError("no parts in gemini response")
-
-        text = parts[0].get("text")
-        if not text:
-            raise ValueError("no text in gemini response")
-    except (KeyError, TypeError) as error:
-        raise ValueError("unexpected gemini response structure") from error
+    result = agent.run_sync(prompt)
 
     log.info("gemini summary received")
-    return text
+    return result.data
 
 
 def fetch_all_repos(username: str) -> list[dict]:
