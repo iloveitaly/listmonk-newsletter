@@ -1,6 +1,6 @@
 # Listmonk Email Newsletter Digest
 
-Generate a [listmonk](https://listmonk.app) newsletter digest campaign from an RSS feed. I'm using it for my personal blog.
+Generate a [listmonk](https://listmonk.app) newsletter digest campaign from an RSS feed. I'm using it [for my personal blog.](https://mikebian.co)
 
 ## Usage
 
@@ -28,13 +28,3 @@ You'll see this in the example template as:
 ```
 
 Another interesting listmonk quirk is if you want link tracking, you need to add `@TrackLink` to the end of the URL. If you pass links to the campaign API without this, they will not be tracked.
-
-## TODO
-
-- [ ] report test email bug to listmonk https://github.com/knadh/listmonk/issues/1948
-- [ ] click tracking when sending HTML content through the API doesn't seem to work
-- [ ] add cli switches for env vars
-- [ ] list selection should be configurable
-- [ ] gpt-powered titles and summaries
-- [ ] pull github releases and add to digest with gpt summary
-- [ ] maybe add twitter content and add to update?
