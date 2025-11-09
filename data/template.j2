@@ -419,6 +419,15 @@
               <h2>Recent Posts</h2>
             </div> #}
             <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+              {% if github_summary %}
+              <tr>
+                <td style="padding-bottom: 30px;">
+                  <div class="text-blog" style="text-align: left;">
+                    {{ github_summary | safe }}
+                  </div>
+                </td>
+              </tr>
+              {% endif %}
               {% for entry in entries -%}
               <tr>
                 <td style="padding-bottom: 30px;">

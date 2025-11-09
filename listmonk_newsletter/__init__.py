@@ -10,23 +10,28 @@ import funcy_pipe as fp
 import html2text
 import jinja2
 import requests
-import structlog
 from decouple import Csv, config
 from lxml import etree
+from markdown import markdown
+from structlog_config import configure_logger
+from whenever import Instant
 
 # side effects! for append_text
 import listmonk_newsletter.pathlib_extension as _
+from summarize_github import (
+    fetch_github_activity,
+    generate_summary_prompt,
+    summarize_with_gemini,
+)
 
-from .util import configure_logger
-
-log = structlog.get_logger()
-configure_logger()
+log = configure_logger()
 
 ROOT_DIRECTORY = Path(__file__).parent.parent.resolve()
 DATA_DIRECTORY = ROOT_DIRECTORY / "data"
 
 FEED_ENTRY_LINKS_FILE = DATA_DIRECTORY / "processed_links.txt"
 CONTENT_TEMPLATE_FILE = DATA_DIRECTORY / "template.j2"
+GITHUB_LAST_CHECKED_FILE = DATA_DIRECTORY / "last_github_checked.txt"
 
 RSS_URL = config("RSS_URL", cast=str)
 
@@ -45,6 +50,62 @@ LISTMONK_REQUEST_PARAMS = {
     "headers": {"Content-Type": "application/json;charset=utf-8"},
     "auth": (LISTMONK_USERNAME, LISTMONK_PASSWORD),
 }
+
+
+def read_last_github_checked(default_days: int) -> str:
+    if GITHUB_LAST_CHECKED_FILE.exists():
+        stored = GITHUB_LAST_CHECKED_FILE.read_text(encoding="utf-8").strip()
+        if stored:
+            return stored
+
+    log.info("github last checked missing", default_days=default_days)
+
+    return (
+        Instant.now()
+        .to_system_tz()
+        .add(days=-default_days)
+        .format_iso()
+    )
+
+
+def write_last_github_checked(timestamp: str) -> None:
+    GITHUB_LAST_CHECKED_FILE.write_text(timestamp, encoding="utf-8")
+
+
+def build_github_summary_html() -> str | None:
+    github_token = config("GITHUB_TOKEN", default=None)
+    google_api_key = config("GOOGLE_API_KEY", default=None)
+
+    if not github_token or not google_api_key:
+        log.info(
+            "github summary skipped",
+            github_token_present=github_token is not None,
+            google_api_key_present=google_api_key is not None,
+        )
+        return None
+
+    username = config("GITHUB_USERNAME", default="iloveitaly")
+    days = config("GITHUB_SUMMARY_DAYS", cast=int, default=30)
+
+    log.info("generating github summary", username=username, days=days)
+
+    last_checked = read_last_github_checked(days)
+
+    activity = fetch_github_activity(username, last_checked)
+    prompt = generate_summary_prompt(activity)
+    summary_markdown = summarize_with_gemini(prompt)
+
+    summary_html = markdown(summary_markdown)
+
+    log.info("github summary generated")
+
+    write_last_github_checked(
+        Instant.now()
+        .to_system_tz()
+        .format_iso()
+    )
+
+    return summary_html
 
 
 def populate_preexisting_entries(entry_links: list[str]) -> bool:
@@ -162,7 +223,10 @@ def start_campaign(campaign_id: int) -> bool:
     return response.status_code == 200
 
 
-def render_email_content(new_entries: list[feedparser.FeedParserDict]) -> str:
+def render_email_content(
+    new_entries: list[feedparser.FeedParserDict],
+    github_summary: str | None,
+) -> str:
     # Create a Jinja2 environment and load the template file
     env = jinja2.Environment(
         loader=jinja2.FileSystemLoader(searchpath=str(ROOT_DIRECTORY)),
@@ -170,7 +234,10 @@ def render_email_content(new_entries: list[feedparser.FeedParserDict]) -> str:
     )
 
     template = env.get_template(str(CONTENT_TEMPLATE_FILE.relative_to(ROOT_DIRECTORY)))
-    rendered_content = template.render(entries=new_entries)
+    rendered_content = template.render(
+        entries=new_entries,
+        github_summary=github_summary,
+    )
 
     inliner = css_inline.CSSInliner(keep_style_tags=True)
     inlined_content = inliner.inline(rendered_content)
@@ -225,7 +292,9 @@ def generate_campaign():
 
     log.info("new entries found", count=len(new_entries))
 
-    content = render_email_content(new_entries)
+    github_summary_html = build_github_summary_html()
+
+    content = render_email_content(new_entries, github_summary_html)
     campaign_id = create_campaign(LISTMONK_TITLE, content)
 
     send_successful = start_campaign(campaign_id)
