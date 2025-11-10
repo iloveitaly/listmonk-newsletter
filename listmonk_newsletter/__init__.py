@@ -52,6 +52,19 @@ LISTMONK_REQUEST_HEADERS = {
 }
 
 
+def ensure_data_resources() -> None:
+    DATA_DIRECTORY.mkdir(parents=True, exist_ok=True)
+
+    if not FEED_ENTRY_LINKS_FILE.exists():
+        FEED_ENTRY_LINKS_FILE.write_text("", encoding="utf-8")
+
+    if not GITHUB_LAST_CHECKED_FILE.exists():
+        GITHUB_LAST_CHECKED_FILE.write_text("", encoding="utf-8")
+
+
+ensure_data_resources()
+
+
 def should_abort_retry(exc: Exception) -> bool:
     """Stop retrying immediately when Listmonk returns an auth error."""
     if not isinstance(exc, requests.exceptions.HTTPError):
@@ -145,11 +158,26 @@ def populate_preexisting_entries(entry_links: list[str]) -> bool:
 
         return True
 
+    if not FEED_ENTRY_LINKS_FILE.read_text(encoding="utf-8").strip():
+        log.info(
+            "Feed entry links file does not exist: "
+            f"{FEED_ENTRY_LINKS_FILE}. Populating it for the first time..."
+        )
+
+        FEED_ENTRY_LINKS_FILE.write_text("\n".join(entry_links), encoding="utf-8")
+
+        return True
+
     return False
 
 
 def read_feed_entry_links_file() -> list[str]:
-    return FEED_ENTRY_LINKS_FILE.read_text(encoding="utf-8").strip("\n").split("\n")
+    content = FEED_ENTRY_LINKS_FILE.read_text(encoding="utf-8").strip()
+
+    if not content:
+        return []
+
+    return content.split("\n")
 
 
 @backoff.on_exception(
@@ -296,9 +324,9 @@ def generate_campaign():
     feed.entries.reverse()
 
     # On first run (feed_entry_links.txt does not exist)
-    if populate_preexisting_entries((e.link for e in feed.entries)):
-        log.info("first run, assuming all entries are new")
-        return
+    entry_links = [str(entry.link) for entry in feed.entries]
+
+    first_run = populate_preexisting_entries(entry_links)
 
     entry_links_last_update = read_feed_entry_links_file()
 
@@ -313,11 +341,19 @@ def generate_campaign():
         entry["image"] = og_image
         return entry
 
-    new_entries = (
-        feed.entries
-        | fp.filter(lambda e: e.link not in entry_links_last_update)
-        | fp.lmap(add_image_link)
-    )
+    if first_run:
+        log.info("first run, including recent entries", count=min(5, len(feed.entries)))
+
+        new_entries = (
+            feed.entries[-5:]
+            | fp.lmap(add_image_link)
+        )
+    else:
+        new_entries = (
+            feed.entries
+            | fp.filter(lambda e: e.link not in entry_links_last_update)
+            | fp.lmap(add_image_link)
+        )
 
     if not new_entries:
         log.info("no new entries found")
