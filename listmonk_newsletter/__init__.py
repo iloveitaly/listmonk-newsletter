@@ -110,6 +110,18 @@ def build_github_summary_html() -> str | None:
     last_checked = read_last_github_checked(days)
 
     activity = fetch_github_activity(username, last_checked)
+
+    next_checkpoint = (
+        Instant.now()
+        .to_system_tz()
+        .format_iso()
+    )
+
+    if not activity.get("releases") and not activity.get("new_repos"):
+        log.info("github summary skipped", reason="no_activity")
+        write_last_github_checked(next_checkpoint)
+        return None
+
     prompt = generate_summary_prompt(activity)
     summary_markdown = summarize_with_gemini(prompt)
 
@@ -117,11 +129,7 @@ def build_github_summary_html() -> str | None:
 
     log.info("github summary generated")
 
-    write_last_github_checked(
-        Instant.now()
-        .to_system_tz()
-        .format_iso()
-    )
+    write_last_github_checked(next_checkpoint)
 
     return summary_html
 
