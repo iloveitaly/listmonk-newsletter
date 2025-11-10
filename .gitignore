@@ -3,4 +3,6 @@
 __pycache__
 
 .envrc
+
 data/processed_links.txt
+data/last_github_checked.txt
