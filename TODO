@@ -1,3 +1,5 @@
+- [ ] replace about with random quotes?
+- [ ] include links to the stuff I've read via the reader API
 - [ ] report test email bug to listmonk https://github.com/knadh/listmonk/issues/1948
 - [ ] click tracking when sending HTML content through the API doesn't seem to work
 - [ ] add cli switches for env vars

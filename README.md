@@ -10,7 +10,7 @@ Some useful commands:
 
 * `LOG_LEVEL=DEBUG` is useful for debugging
 * `docker compose exec listmonk-newsletter bash -l` is useful for executing commands directly
-* `poetry install` and then `listmonk-newsletter` to run it locally
+* `uv sync` and then `uv run listmonk-newsletter` to run it locally
 
 ## Email Templates
 
