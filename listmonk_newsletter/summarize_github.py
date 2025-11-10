@@ -12,6 +12,7 @@ from whenever import Instant
 
 log = configure_logger()
 
+
 def get_headers() -> dict[str, str]:
     token = config("GITHUB_TOKEN", default=None)
     headers = {"Accept": "application/vnd.github.v3+json"}
@@ -19,11 +20,13 @@ def get_headers() -> dict[str, str]:
         headers["Authorization"] = f"token {token}"
     return headers
 
+
 def github_api_get(url: str) -> list | dict:
     headers = get_headers()
     resp = requests.get(url, headers=headers)
     resp.raise_for_status()
     return resp.json()
+
 
 def summarize_with_gemini(prompt: str) -> str:
     api_key = config("GOOGLE_API_KEY", default=None)
@@ -53,54 +56,64 @@ def fetch_all_repos(username: str) -> list[dict]:
         data = github_api_get(url)
         if not data:
             break
-        repos.extend([
-            repo for repo in data
-            if not repo.get('fork') and (repo.get('description') or '').strip()
-        ])
+        repos.extend(
+            [
+                repo
+                for repo in data
+                if not repo.get("fork") and (repo.get("description") or "").strip()
+            ]
+        )
         page += 1
     log.info("all repos fetched", count=len(repos), username=username)
     return repos
+
 
 def fetch_releases(username: str, last_checked: Instant, repos: list[dict]) -> list[dict]:
     log.info("fetching releases", username=username)
     releases = []
     for repo in repos:
-        repo_name = repo['name']
+        repo_name = repo["name"]
         releases_url = f"https://api.github.com/repos/{username}/{repo_name}/releases"
         repo_releases = github_api_get(releases_url)
         if not repo_releases:
             continue
         latest = repo_releases[0]
-        release_date = Instant.parse_iso(latest['published_at'])
+        release_date = Instant.parse_iso(latest["published_at"])
         if release_date <= last_checked:
             continue
-        releases.append({
-            'repo': repo_name,
-            'tag': latest['tag_name'],
-            'date': latest['published_at'],
-            'name': latest['name'] or latest['tag_name'],
-            'repo_url': repo['html_url'],
-            'url': latest['html_url'],
-            'description': latest['body'] if latest['body'] else "No description"
-        })
+        releases.append(
+            {
+                "repo": repo_name,
+                "tag": latest["tag_name"],
+                "date": latest["published_at"],
+                "name": latest["name"] or latest["tag_name"],
+                "repo_url": repo["html_url"],
+                "url": latest["html_url"],
+                "description": latest["body"] if latest["body"] else "No description",
+            }
+        )
     log.info("releases fetched", count=len(releases), username=username)
     return releases
+
 
 def fetch_new_repos(last_checked: Instant, repos: list[dict]) -> list[dict]:
     log.info("fetching new repos")
     new_repos = []
     for repo in repos:
-        created_date = Instant.parse_iso(repo['created_at'])
+        created_date = Instant.parse_iso(repo["created_at"])
         if created_date <= last_checked:
             continue
-        new_repos.append({
-            'name': repo['name'],
-            'created_at': repo['created_at'],
-            'description': repo['description'] or "No description",
-            'url': repo['html_url']
-        })
+        new_repos.append(
+            {
+                "name": repo["name"],
+                "created_at": repo["created_at"],
+                "description": repo["description"] or "No description",
+                "url": repo["html_url"],
+            }
+        )
     log.info("new repos fetched", count=len(new_repos))
     return new_repos
+
 
 def fetch_github_activity(username: str, last_checked: str) -> dict:
     log.info("fetching github activity", username=username, last_checked=last_checked)
@@ -108,22 +121,24 @@ def fetch_github_activity(username: str, last_checked: str) -> dict:
     repos = fetch_all_repos(username)
     activity = {
         "releases": fetch_releases(username, last_checked_dt, repos),
-        "new_repos": fetch_new_repos(last_checked_dt, repos)
+        "new_repos": fetch_new_repos(last_checked_dt, repos),
     }
     log.info("github activity fetched", username=username)
     return activity
 
+
 def filter_releases_for_new_repos(activity: dict) -> dict:
-    new_repo_names = {repo['name'] for repo in activity.get('new_repos', [])}
+    new_repo_names = {repo["name"] for repo in activity.get("new_repos", [])}
     filtered_releases = [
-        release for release in activity.get('releases', [])
-        if release['repo'] not in new_repo_names
+        release
+        for release in activity.get("releases", [])
+        if release["repo"] not in new_repo_names
     ]
-    removed = len(activity.get('releases', [])) - len(filtered_releases)
+    removed = len(activity.get("releases", [])) - len(filtered_releases)
     if removed:
         log.info("filtered releases overlapping new repos", removed=removed)
     updated_activity = dict(activity)
-    updated_activity['releases'] = filtered_releases
+    updated_activity["releases"] = filtered_releases
     return updated_activity
 
 
@@ -143,11 +158,28 @@ You are an expert newsletter writer specializing in concise and engaging summari
 * You can assume that elsewhere in the newsletter we've already introduced the user to the newsletter and added a signoff.
   * Do not include general information like "Hey there, newsletter crew! Here's the latest scoop on my GitHub activity, packed with exciting updates from the past couple of months."
 * Write an intro that gives a 1-2 sentence overview of the activity.
-* Avoid fluff and filler phrases.
-* `## New Projects` and `## New Releases` are the section headers to use.
+* Avoid fluff, filler phrases, and unnecessary adjectives.
+* Use `## New Projects` and `## New Releases` as the section headers.
 * No horizontal lines.
+* Write in the 1st person.
 
-Write a summary that is clear, concise, and suitable for a newsletter audience.
+Write a summary that is clear, concise, and suitable for a newsletter audience. Here's an example:
+
+```markdown
+Some major feature additions in existing libraries, particularly in
+data modeling and logging tools, alongside the launch of six focused new
+projects.
+
+## New Projects
+
+* [beautiful-traceback](https://github.com/iloveitaly/beautiful-traceback): Beautiful, readable Python tracebacks with colors and formatting.
+* [cloudflare-analytics](https://github.com/iloveitaly/cloudflare-analytics): A client for the Cloudflare Analytics GraphQL API.
+
+## New Releases
+
+* [activemodel](https://github.com/iloveitaly/activemodel). Added new query methods to the query wrapper, including an efficient `exists()` function and a `sample()` method for random row selection.
+* [aiautocommit](https://github.com/iloveitaly/aiautocommit). Integrated difftastic for structured diff visualization.
+```
 
 Below is the GitHub activity data to summarize.
 
@@ -180,11 +212,16 @@ Below is the GitHub activity data to summarize.
     log.debug("summary prompt generated")
     return prompt
 
+
 @click.command()
-@click.option('--username', default="iloveitaly")
-@click.option('--days', default=60, type=int)
-@click.option('--output-file', default=None, type=str)
-@click.option('--summarize', is_flag=True, help="Send the prompt to Gemini and output the summary")
+@click.option("--username", default="iloveitaly")
+@click.option("--days", default=60, type=int)
+@click.option("--output-file", default=None, type=str)
+@click.option(
+    "--summarize",
+    is_flag=True,
+    help="Send the prompt to Gemini and output the summary",
+)
 def main(
     username: str,
     days: int,
@@ -207,6 +244,7 @@ def main(
         return
 
     click.echo(prompt)
+
 
 if __name__ == "__main__":
     main()

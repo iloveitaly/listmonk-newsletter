@@ -16,9 +16,7 @@ from markdown import markdown
 from structlog_config import configure_logger
 from whenever import Instant
 
-# side effects! for append_text
-import listmonk_newsletter.pathlib_extension as _
-from summarize_github import (
+from .summarize_github import (
     fetch_github_activity,
     generate_summary_prompt,
     summarize_with_gemini,
@@ -28,7 +26,6 @@ log = configure_logger()
 
 ROOT_DIRECTORY = Path(__file__).parent.parent.resolve()
 DATA_DIRECTORY = ROOT_DIRECTORY / "data"
-
 FEED_ENTRY_LINKS_FILE = DATA_DIRECTORY / "processed_links.txt"
 CONTENT_TEMPLATE_FILE = DATA_DIRECTORY / "template.j2"
 GITHUB_LAST_CHECKED_FILE = DATA_DIRECTORY / "last_github_checked.txt"
@@ -180,6 +177,29 @@ def read_feed_entry_links_file() -> list[str]:
     return content.split("\n")
 
 
+def append_new_feed_links(existing_links: list[str], new_entries: list[feedparser.FeedParserDict]) -> None:
+    known_links = set(existing_links)
+
+    additions = []
+
+    # TODO funcy could clear this up :/
+    for entry in new_entries:
+        link = str(entry.link)
+
+        if link in known_links:
+            continue
+
+        known_links.add(link)
+        additions.append(link)
+
+    if not additions:
+        return
+
+    updated_links = [*existing_links, *additions]
+
+    FEED_ENTRY_LINKS_FILE.write_text("\n".join(updated_links), encoding="utf-8")
+
+
 @backoff.on_exception(
     backoff.expo,
     # highest exception up the exception hierarchy
@@ -216,6 +236,9 @@ def create_campaign(title: str, body: str) -> int:
         # from listmonk docs:
         # Timestamp to schedule campaign. Format: 'YYYY-MM-DDTHH:MM:SS'.
 
+        if parsed_date is None:
+            raise ValueError("LISTMONK_SEND_AT could not be parsed")
+
         send_at = parsed_date.strftime("%Y-%m-%dT%H:%M:%SZ")
 
     # https://listmonk.app/docs/apis/campaigns/#post-apicampaigns
@@ -232,7 +255,9 @@ def create_campaign(title: str, body: str) -> int:
         "messenger": "email",
         "type": "regular",
         "tags": ["listmonk-newsletter"],
+        "archive": True,
     }
+
 
     response = requests.post(
         f"{LISTMONK_URL}/api/campaigns",
@@ -376,10 +401,7 @@ def generate_campaign():
 
         log.info("campaign scheduled successfully, updating inspected feed links")
 
-        # TODO should really have a `exec()` or something in fp for this use case
-        new_entries | fp.pluck_attr("link") | fp.map(lambda t: "\n" + t) | fp.lmap(
-            FEED_ENTRY_LINKS_FILE.append_text
-        )
+        append_new_feed_links(entry_links_last_update, list(new_entries))
 
 
 @click.command()
