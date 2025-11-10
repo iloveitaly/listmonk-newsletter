@@ -37,7 +37,7 @@ RSS_URL = config("RSS_URL", cast=str)
 
 LISTMONK_URL = config("LISTMONK_URL", cast=str)
 LISTMONK_USERNAME = config("LISTMONK_USERNAME", cast=str)
-LISTMONK_PASSWORD = config("LISTMONK_PASSWORD", cast=str)
+LISTMONK_API_TOKEN = config("LISTMONK_API_TOKEN", cast=str)
 LISTMONK_TITLE = config("LISTMONK_TITLE", cast=str)
 
 LISTMONK_TEMPLATE = config("LISTMONK_TEMPLATE", cast=int, default=None)
@@ -46,10 +46,28 @@ LISTMONK_TEST_EMAILS = config("LISTMONK_TEST_EMAILS", cast=Csv(), default=None)
 
 BACKOFF_LIMIT = 8
 
-LISTMONK_REQUEST_PARAMS = {
-    "headers": {"Content-Type": "application/json;charset=utf-8"},
-    "auth": (LISTMONK_USERNAME, LISTMONK_PASSWORD),
+LISTMONK_REQUEST_HEADERS = {
+    "Content-Type": "application/json;charset=utf-8",
+    "Authorization": f"token {LISTMONK_USERNAME}:{LISTMONK_API_TOKEN}",
 }
+
+
+def should_abort_retry(exc: Exception) -> bool:
+    """Stop retrying immediately when Listmonk returns an auth error."""
+    if not isinstance(exc, requests.exceptions.HTTPError):
+        return False
+
+    response = exc.response
+
+    if response is None:
+        return False
+
+    if response.status_code != 403:
+        return False
+
+    log.error("listmonk authentication failed", status_code=response.status_code)
+
+    return True
 
 
 def read_last_github_checked(default_days: int) -> str:
@@ -84,7 +102,7 @@ def build_github_summary_html() -> str | None:
         )
         return None
 
-    username = config("GITHUB_USERNAME", default="iloveitaly")
+    username = config("GITHUB_USERNAME")
     days = config("GITHUB_SUMMARY_DAYS", cast=int, default=30)
 
     log.info("generating github summary", username=username, days=days)
@@ -149,6 +167,7 @@ def get_og_image(url: str) -> str | None:
     backoff.expo,
     (requests.exceptions.RequestException),
     max_tries=BACKOFF_LIMIT,
+    giveup=should_abort_retry,
 )
 def create_campaign(title: str, body: str) -> int:
     send_at = None
@@ -180,8 +199,12 @@ def create_campaign(title: str, body: str) -> int:
     }
 
     response = requests.post(
-        f"{LISTMONK_URL}/api/campaigns", json=json_data, **LISTMONK_REQUEST_PARAMS
+        f"{LISTMONK_URL}/api/campaigns",
+        json=json_data,
+        headers=LISTMONK_REQUEST_HEADERS,
     )
+
+    response.raise_for_status()
 
     return response.json()["data"]["id"]
 
@@ -190,6 +213,7 @@ def create_campaign(title: str, body: str) -> int:
     backoff.expo,
     (requests.exceptions.RequestException),
     max_tries=BACKOFF_LIMIT,
+    giveup=should_abort_retry,
 )
 def send_tests(campaign_id: int, emails: list[str]):
     """
@@ -200,7 +224,7 @@ def send_tests(campaign_id: int, emails: list[str]):
         json={
             "subscribers": emails,
         },
-        **LISTMONK_REQUEST_PARAMS,
+        headers=LISTMONK_REQUEST_HEADERS,
     )
 
     response.raise_for_status()
@@ -210,12 +234,13 @@ def send_tests(campaign_id: int, emails: list[str]):
     backoff.expo,
     (requests.exceptions.RequestException),
     max_tries=BACKOFF_LIMIT,
+    giveup=should_abort_retry,
 )
 def start_campaign(campaign_id: int) -> bool:
     response = requests.put(
         f"{LISTMONK_URL}/api/campaigns/{campaign_id}/status",
         json={"status": "scheduled"},
-        **LISTMONK_REQUEST_PARAMS,
+        headers=LISTMONK_REQUEST_HEADERS,
     )
 
     response.raise_for_status()
