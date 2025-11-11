@@ -97,36 +97,32 @@ def fetch_releases(username: str, last_checked: Instant, repos: list[dict]) -> l
     return releases
 
 
-def fetch_repos_mentioning_user(username: str) -> list[dict]:
-    log.info("searching for repos mentioning user", username=username)
+def fetch_contributed_repos(username: str, last_checked: Instant) -> list[dict]:
+    log.info("fetching repos with user commits", username=username)
+    last_checked_str = last_checked.format_iso().split("T")[0]
 
-    search_url = f"https://api.github.com/search/issues?q={username}&per_page=100&sort=updated"
+    search_url = f"https://api.github.com/search/commits?q=author:{username}+committer-date:>{last_checked_str}&per_page=100"
 
     try:
         data = github_api_get(search_url)
     except Exception as e:
-        log.warning("failed to search for user mentions", error=str(e))
+        log.warning("failed to search for user commits", error=str(e))
         return []
 
     if not data or "items" not in data:
-        log.info("no repos mentioning user found")
+        log.info("no repos with user commits found")
         return []
 
     seen_repos = set()
     repos = []
 
-    for item in data["items"]:
-        if "repository_url" not in item:
+    for commit in data["items"]:
+        if "repository" not in commit:
             continue
 
-        try:
-            repo_data = github_api_get(item["repository_url"])
-        except Exception as e:
-            log.warning("failed to fetch repo", url=item["repository_url"], error=str(e))
-            continue
-
-        repo_full_name = repo_data["full_name"]
-        repo_owner = repo_data["owner"]["login"]
+        repo = commit["repository"]
+        repo_full_name = repo["full_name"]
+        repo_owner = repo["owner"]["login"]
 
         if repo_owner == username:
             continue
@@ -135,9 +131,9 @@ def fetch_repos_mentioning_user(username: str) -> list[dict]:
             continue
 
         seen_repos.add(repo_full_name)
-        repos.append(repo_data)
+        repos.append(repo)
 
-    log.info("repos mentioning user found", count=len(repos), username=username)
+    log.info("repos with user commits found", count=len(repos), username=username)
     return repos
 
 
@@ -214,8 +210,8 @@ def fetch_github_activity(username: str, last_checked: str) -> dict:
     repos = fetch_all_repos(username)
     user_releases = fetch_releases(username, last_checked_dt, repos)
 
-    repos_mentioning_user = fetch_repos_mentioning_user(username)
-    cross_user_releases = fetch_cross_user_releases(username, last_checked_dt, repos_mentioning_user)
+    contributed_repos = fetch_contributed_repos(username, last_checked_dt)
+    cross_user_releases = fetch_cross_user_releases(username, last_checked_dt, contributed_repos)
 
     all_releases = user_releases + cross_user_releases
 
