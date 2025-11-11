@@ -97,32 +97,36 @@ def fetch_releases(username: str, last_checked: Instant, repos: list[dict]) -> l
     return releases
 
 
-def fetch_contributed_repos(username: str, last_checked: Instant) -> list[dict]:
-    log.info("fetching contributed repos", username=username)
-    last_checked_str = last_checked.format_iso().split("T")[0]
+def fetch_repos_mentioning_user(username: str) -> list[dict]:
+    log.info("searching for repos mentioning user", username=username)
 
-    search_url = f"https://api.github.com/search/commits?q=author:{username}+committer-date:>{last_checked_str}&per_page=100"
+    search_url = f"https://api.github.com/search/issues?q={username}&per_page=100&sort=updated"
 
     try:
         data = github_api_get(search_url)
     except Exception as e:
-        log.warning("failed to fetch contributed repos", error=str(e))
+        log.warning("failed to search for user mentions", error=str(e))
         return []
 
     if not data or "items" not in data:
-        log.info("no contributed repos found")
+        log.info("no repos mentioning user found")
         return []
 
     seen_repos = set()
-    contributed_repos = []
+    repos = []
 
-    for commit in data["items"]:
-        if "repository" not in commit:
+    for item in data["items"]:
+        if "repository_url" not in item:
             continue
 
-        repo = commit["repository"]
-        repo_full_name = repo["full_name"]
-        repo_owner = repo["owner"]["login"]
+        try:
+            repo_data = github_api_get(item["repository_url"])
+        except Exception as e:
+            log.warning("failed to fetch repo", url=item["repository_url"], error=str(e))
+            continue
+
+        repo_full_name = repo_data["full_name"]
+        repo_owner = repo_data["owner"]["login"]
 
         if repo_owner == username:
             continue
@@ -131,17 +135,19 @@ def fetch_contributed_repos(username: str, last_checked: Instant) -> list[dict]:
             continue
 
         seen_repos.add(repo_full_name)
-        contributed_repos.append(repo)
+        repos.append(repo_data)
 
-    log.info("contributed repos fetched", count=len(contributed_repos), username=username)
-    return contributed_repos
+    log.info("repos mentioning user found", count=len(repos), username=username)
+    return repos
 
 
-def fetch_cross_user_releases(username: str, last_checked: Instant, contributed_repos: list[dict]) -> list[dict]:
-    log.info("fetching cross-user releases", username=username)
+def fetch_cross_user_releases(username: str, last_checked: Instant, repos: list[dict]) -> list[dict]:
+    log.info("fetching cross-user releases mentioning user", username=username)
     releases = []
 
-    for repo in contributed_repos:
+    username_lower = username.lower()
+
+    for repo in repos:
         repo_full_name = repo["full_name"]
         releases_url = f"https://api.github.com/repos/{repo_full_name}/releases"
 
@@ -154,24 +160,29 @@ def fetch_cross_user_releases(username: str, last_checked: Instant, contributed_
         if not repo_releases:
             continue
 
-        latest = repo_releases[0]
-        release_date = Instant.parse_iso(latest["published_at"])
+        for release in repo_releases:
+            release_date = Instant.parse_iso(release["published_at"])
 
-        if release_date <= last_checked:
-            continue
+            if release_date <= last_checked:
+                break
 
-        releases.append(
-            {
-                "repo": repo["name"],
-                "tag": latest["tag_name"],
-                "date": latest["published_at"],
-                "name": latest["name"] or latest["tag_name"],
-                "repo_url": repo["html_url"],
-                "url": latest["html_url"],
-                "description": latest["body"] if latest["body"] else "No description",
-                "owner": repo["owner"]["login"],
-            }
-        )
+            release_body = (release.get("body") or "").lower()
+
+            if username_lower not in release_body and f"@{username_lower}" not in release_body:
+                continue
+
+            releases.append(
+                {
+                    "repo": repo["name"],
+                    "tag": release["tag_name"],
+                    "date": release["published_at"],
+                    "name": release["name"] or release["tag_name"],
+                    "repo_url": repo["html_url"],
+                    "url": release["html_url"],
+                    "description": release["body"] if release["body"] else "No description",
+                    "owner": repo["owner"]["login"],
+                }
+            )
 
     log.info("cross-user releases fetched", count=len(releases), username=username)
     return releases
@@ -203,8 +214,8 @@ def fetch_github_activity(username: str, last_checked: str) -> dict:
     repos = fetch_all_repos(username)
     user_releases = fetch_releases(username, last_checked_dt, repos)
 
-    contributed_repos = fetch_contributed_repos(username, last_checked_dt)
-    cross_user_releases = fetch_cross_user_releases(username, last_checked_dt, contributed_repos)
+    repos_mentioning_user = fetch_repos_mentioning_user(username)
+    cross_user_releases = fetch_cross_user_releases(username, last_checked_dt, repos_mentioning_user)
 
     all_releases = user_releases + cross_user_releases
 
