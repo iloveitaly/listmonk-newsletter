@@ -90,9 +90,110 @@ def fetch_releases(username: str, last_checked: Instant, repos: list[dict]) -> l
                 "repo_url": repo["html_url"],
                 "url": latest["html_url"],
                 "description": latest["body"] if latest["body"] else "No description",
+                "owner": username,
             }
         )
     log.info("releases fetched", count=len(releases), username=username)
+    return releases
+
+
+def fetch_contributed_repos(username: str, last_checked: Instant) -> list[dict]:
+    """
+    Find repositories where the user has authored commits.
+
+    GitHub does not provide an API to search release notes across all repositories.
+    As a workaround, we search for commits authored by the user to identify repositories
+    they've contributed to, then filter releases from those repos for ones mentioning the user.
+    """
+    log.info("fetching repos with user commits", username=username)
+    last_checked_str = last_checked.format_iso().split("T")[0]
+
+    search_url = f"https://api.github.com/search/commits?q=author:{username}+committer-date:>{last_checked_str}&per_page=100"
+
+    try:
+        data = github_api_get(search_url)
+    except Exception as e:
+        log.warning("failed to search for user commits", error=str(e))
+        return []
+
+    if not data or "items" not in data:
+        log.info("no repos with user commits found")
+        return []
+
+    seen_repos = set()
+    repos = []
+
+    for commit in data["items"]:
+        if "repository" not in commit:
+            continue
+
+        repo = commit["repository"]
+        repo_full_name = repo["full_name"]
+        repo_owner = repo["owner"]["login"]
+
+        if repo_owner == username:
+            continue
+
+        if repo_full_name in seen_repos:
+            continue
+
+        seen_repos.add(repo_full_name)
+        repos.append(repo)
+
+    log.info("repos with user commits found", count=len(repos), username=username)
+    return repos
+
+
+def fetch_cross_user_releases(username: str, last_checked: Instant, repos: list[dict]) -> list[dict]:
+    """
+    Fetch releases from contributed repositories where the user is mentioned.
+
+    Filters releases to only include those where the username appears in the release body,
+    as these are likely releases where the user is credited as a contributor.
+    """
+    log.info("fetching cross-user releases mentioning user", username=username)
+    releases = []
+
+    username_lower = username.lower()
+
+    for repo in repos:
+        repo_full_name = repo["full_name"]
+        releases_url = f"https://api.github.com/repos/{repo_full_name}/releases"
+
+        try:
+            repo_releases = github_api_get(releases_url)
+        except Exception as e:
+            log.warning("failed to fetch releases", repo=repo_full_name, error=str(e))
+            continue
+
+        if not repo_releases:
+            continue
+
+        for release in repo_releases:
+            release_date = Instant.parse_iso(release["published_at"])
+
+            if release_date <= last_checked:
+                break
+
+            release_body = (release.get("body") or "").lower()
+
+            if username_lower not in release_body and f"@{username_lower}" not in release_body:
+                continue
+
+            releases.append(
+                {
+                    "repo": repo["name"],
+                    "tag": release["tag_name"],
+                    "date": release["published_at"],
+                    "name": release["name"] or release["tag_name"],
+                    "repo_url": repo["html_url"],
+                    "url": release["html_url"],
+                    "description": release["body"] if release["body"] else "No description",
+                    "owner": repo["owner"]["login"],
+                }
+            )
+
+    log.info("cross-user releases fetched", count=len(releases), username=username)
     return releases
 
 
@@ -118,12 +219,20 @@ def fetch_new_repos(last_checked: Instant, repos: list[dict]) -> list[dict]:
 def fetch_github_activity(username: str, last_checked: str) -> dict:
     log.info("fetching github activity", username=username, last_checked=last_checked)
     last_checked_dt = Instant.parse_iso(last_checked)
+
     repos = fetch_all_repos(username)
+    user_releases = fetch_releases(username, last_checked_dt, repos)
+
+    contributed_repos = fetch_contributed_repos(username, last_checked_dt)
+    cross_user_releases = fetch_cross_user_releases(username, last_checked_dt, contributed_repos)
+
+    all_releases = user_releases + cross_user_releases
+
     activity = {
-        "releases": fetch_releases(username, last_checked_dt, repos),
+        "releases": all_releases,
         "new_repos": fetch_new_repos(last_checked_dt, repos),
     }
-    log.info("github activity fetched", username=username)
+    log.info("github activity fetched", username=username, total_releases=len(all_releases))
     return activity
 
 
@@ -142,7 +251,7 @@ def filter_releases_for_new_repos(activity: dict) -> dict:
     return updated_activity
 
 
-def generate_summary_prompt(activity: dict) -> str:
+def generate_summary_prompt(activity: dict, username: str = "iloveitaly") -> str:
     log.debug("generating summary prompt")
     filtered_activity = filter_releases_for_new_repos(activity)
     template_str = """
@@ -188,7 +297,7 @@ Below is the GitHub activity data to summarize.
 ## New Releases
 {% if activity.releases %}
 {% for release in activity.releases %}
-- [{{ release.name }}]({{ release.url }}) in Repository: [{{ release.repo }}]({{ release.repo_url }}) (Tag: {{ release.tag }}), Published: {{ release.date }}
+- [{{ release.name }}]({{ release.url }}) in Repository: [{% if release.owner != username %}{{ release.owner }}/{% endif %}{{ release.repo }}]({{ release.repo_url }}) (Tag: {{ release.tag }}), Published: {{ release.date }}
   Description:
   ```markdown
   {{ release.description }}
@@ -208,7 +317,7 @@ Below is the GitHub activity data to summarize.
 {% endif %}
 """
     template = Template(template_str)
-    prompt = template.render(activity=filtered_activity)
+    prompt = template.render(activity=filtered_activity, username=username)
     log.debug("summary prompt generated")
     return prompt
 
@@ -230,7 +339,7 @@ def main(
 ):
     last_checked = Instant.now().to_system_tz().add(days=-days).format_iso()
     activity = fetch_github_activity(username, last_checked)
-    prompt = generate_summary_prompt(activity)
+    prompt = generate_summary_prompt(activity, username)
     if summarize:
         summary = summarize_with_gemini(prompt)
         if output_file:

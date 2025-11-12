@@ -138,7 +138,7 @@ def build_github_summary_html() -> str | None:
         write_last_github_checked(next_checkpoint)
         return None
 
-    prompt = generate_summary_prompt(activity)
+    prompt = generate_summary_prompt(activity, username)
     summary_markdown = summarize_with_gemini(prompt)
 
     summary_html = markdown(summary_markdown)
