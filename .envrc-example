@@ -27,4 +27,4 @@ export READWISE_API_TOKEN=""
 # tag to filter articles (e.g., "newsletter", "public", "share")
 export READWISE_TAG="newsletter"
 # optional: days to look back on first run (default: 30)
-export READWISE_LOOKBACK_DAYS=30
+export READWISE_SUMMARY_DAYS=30

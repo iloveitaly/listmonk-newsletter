@@ -162,9 +162,9 @@ def build_readwise_articles() -> list[ReadwiseArticle]:
         )
         return []
 
-    lookback_days = config("READWISE_LOOKBACK_DAYS", cast=int, default=30)
+    summary_days = config("READWISE_SUMMARY_DAYS", cast=int, default=30)
 
-    log.info("fetching readwise articles", tag=readwise_tag, lookback_days=lookback_days)
+    log.info("fetching readwise articles", tag=readwise_tag, summary_days=summary_days)
 
     last_checked = get_last_readwise_check()
 
@@ -172,7 +172,7 @@ def build_readwise_articles() -> list[ReadwiseArticle]:
         token=readwise_token,
         tag=readwise_tag,
         since=last_checked,
-        lookback_days=lookback_days
+        lookback_days=summary_days
     )
 
     if articles:

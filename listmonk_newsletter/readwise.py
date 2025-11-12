@@ -122,8 +122,8 @@ def get_readwise_articles(
 @click.command()
 @click.option("--token", help="Readwise API token (or set READWISE_API_TOKEN env var)")
 @click.option("--tag", help="Tag to filter articles (or set READWISE_TAG env var)")
-@click.option("--lookback-days", type=int, default=30, help="Days to look back (default: 30)")
-def cli(token: str | None, tag: str | None, lookback_days: int):
+@click.option("--summary-days", type=int, default=30, help="Days to look back (default: 30)")
+def cli(token: str | None, tag: str | None, summary_days: int):
     """
     Test Readwise Reader integration by fetching articles with a specific tag.
     """
@@ -138,7 +138,7 @@ def cli(token: str | None, tag: str | None, lookback_days: int):
         click.echo("Error: READWISE_TAG not set. Either pass --tag or set environment variable.", err=True)
         return
 
-    click.echo(f"Fetching articles with tag '{readwise_tag}' (lookback: {lookback_days} days)...")
+    click.echo(f"Fetching articles with tag '{readwise_tag}' (lookback: {summary_days} days)...")
 
     last_checked = get_last_readwise_check()
 
@@ -151,7 +151,7 @@ def cli(token: str | None, tag: str | None, lookback_days: int):
         token=readwise_token,
         tag=readwise_tag,
         since=last_checked,
-        lookback_days=lookback_days
+        lookback_days=summary_days
     )
 
     click.echo(f"\nFound {len(articles)} articles:\n")

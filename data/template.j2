@@ -454,24 +454,9 @@
                 <td style="padding-top: 30px;">
                   <div class="heading-section"><h2>What I've Been Reading</h2></div>
                   <div class="text-blog">
-                    <ul style="list-style-type: none; padding: 0;">
+                    <ul>
                       {% for article in readwise_articles %}
-                      <li style="margin-bottom: 20px; padding-bottom: 20px; border-bottom: 1px solid #eee;">
-                        <h3 style="margin: 0 0 10px 0; font-size: 18px;">
-                          <a href="{{ article.url }}@TrackLink" target="_blank" style="color: #448ef6;">{{ article.title }}</a>
-                        </h3>
-                        {% if article.author %}
-                        <p style="margin: 5px 0; color: rgba(0, 0, 0, .6); font-size: 14px;">
-                          by {{ article.author }}
-                          {% if article.word_count %}
-                          · {{ article.word_count }} words
-                          {% endif %}
-                        </p>
-                        {% endif %}
-                        {% if article.summary %}
-                        <p style="margin: 10px 0 0 0; color: rgba(0, 0, 0, .7);">{{ article.summary }}</p>
-                        {% endif %}
-                      </li>
+                      <li><a href="{{ article.url }}@TrackLink" target="_blank" style="color: #448ef6;">{{ article.title }}</a></li>
                       {% endfor %}
                     </ul>
                   </div>
