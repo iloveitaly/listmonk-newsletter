@@ -7,7 +7,9 @@ import os
 from pathlib import Path
 
 import backoff
+import click
 import requests
+from decouple import config
 from pydantic import BaseModel
 from whenever import Instant, days
 
@@ -115,3 +117,62 @@ def get_readwise_articles(
     log.info("fetched readwise articles", count=len(articles))
 
     return articles
+
+
+@click.command()
+@click.option("--token", help="Readwise API token (or set READWISE_API_TOKEN env var)")
+@click.option("--tag", help="Tag to filter articles (or set READWISE_TAG env var)")
+@click.option("--lookback-days", type=int, default=30, help="Days to look back (default: 30)")
+def cli(token: str | None, tag: str | None, lookback_days: int):
+    """
+    Test Readwise Reader integration by fetching articles with a specific tag.
+    """
+    readwise_token = token or config("READWISE_API_TOKEN", default=None)
+    readwise_tag = tag or config("READWISE_TAG", default=None)
+
+    if not readwise_token:
+        click.echo("Error: READWISE_API_TOKEN not set. Either pass --token or set environment variable.", err=True)
+        return
+
+    if not readwise_tag:
+        click.echo("Error: READWISE_TAG not set. Either pass --tag or set environment variable.", err=True)
+        return
+
+    click.echo(f"Fetching articles with tag '{readwise_tag}' (lookback: {lookback_days} days)...")
+
+    last_checked = get_last_readwise_check()
+
+    if last_checked:
+        click.echo(f"Last checked: {last_checked.format_common_iso()}")
+    else:
+        click.echo("No previous check found - using lookback period")
+
+    articles = get_readwise_articles(
+        token=readwise_token,
+        tag=readwise_tag,
+        since=last_checked,
+        lookback_days=lookback_days
+    )
+
+    click.echo(f"\nFound {len(articles)} articles:\n")
+
+    for i, article in enumerate(articles, 1):
+        click.echo(f"{i}. {article.title}")
+        click.echo(f"   URL: {article.url}")
+        if article.author:
+            click.echo(f"   Author: {article.author}")
+        if article.word_count:
+            click.echo(f"   Words: {article.word_count}")
+        click.echo(f"   Tags: {', '.join(article.tags)}")
+        if article.summary:
+            click.echo(f"   Summary: {article.summary}")
+        click.echo()
+
+    if articles:
+        if click.confirm("Update last checked timestamp?"):
+            update_last_readwise_check(Instant.now())
+            click.echo("Timestamp updated!")
+
+
+if __name__ == "__main__":
+    cli()
