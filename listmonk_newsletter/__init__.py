@@ -21,6 +21,12 @@ from .summarize_github import (
     generate_summary_prompt,
     summarize_with_gemini,
 )
+from .readwise import (
+    get_last_readwise_check,
+    get_readwise_articles,
+    update_last_readwise_check,
+    ReadwiseArticle,
+)
 
 log = configure_logger()
 
@@ -142,6 +148,38 @@ def build_github_summary_html() -> str | None:
     write_last_github_checked(next_checkpoint)
 
     return summary_html
+
+
+def build_readwise_articles() -> list[ReadwiseArticle]:
+    readwise_token = config("READWISE_API_TOKEN", default=None)
+    readwise_tag = config("READWISE_TAG", default=None)
+
+    if not readwise_token or not readwise_tag:
+        log.info(
+            "readwise articles skipped",
+            readwise_token_present=readwise_token is not None,
+            readwise_tag_present=readwise_tag is not None,
+        )
+        return []
+
+    lookback_days = config("READWISE_LOOKBACK_DAYS", cast=int, default=30)
+
+    log.info("fetching readwise articles", tag=readwise_tag, lookback_days=lookback_days)
+
+    last_checked = get_last_readwise_check()
+
+    articles = get_readwise_articles(
+        token=readwise_token,
+        tag=readwise_tag,
+        since=last_checked,
+        lookback_days=lookback_days
+    )
+
+    if articles:
+        update_last_readwise_check(Instant.now())
+        log.info("readwise articles fetched", count=len(articles))
+
+    return articles
 
 
 def populate_preexisting_entries(entry_links: list[str]) -> bool:
@@ -312,6 +350,8 @@ def start_campaign(campaign_id: int) -> bool:
 def render_email_content(
     new_entries: list[feedparser.FeedParserDict],
     github_summary: str | None,
+    readwise_articles: list[ReadwiseArticle],
+    readwise_section_title: str | None,
 ) -> str:
     # Create a Jinja2 environment and load the template file
     env = jinja2.Environment(
@@ -323,6 +363,8 @@ def render_email_content(
     rendered_content = template.render(
         entries=new_entries,
         github_summary=github_summary,
+        readwise_articles=readwise_articles,
+        readwise_section_title=readwise_section_title,
     )
 
     inliner = css_inline.CSSInliner(keep_style_tags=True)
@@ -387,8 +429,15 @@ def generate_campaign():
     log.info("new entries found", count=len(new_entries))
 
     github_summary_html = build_github_summary_html()
+    readwise_articles = build_readwise_articles()
+    readwise_section_title = config("READWISE_SECTION_TITLE", default=None)
 
-    content = render_email_content(new_entries, github_summary_html)
+    content = render_email_content(
+        new_entries,
+        github_summary_html,
+        readwise_articles,
+        readwise_section_title
+    )
     campaign_id = create_campaign(LISTMONK_TITLE, content)
 
     send_successful = start_campaign(campaign_id)

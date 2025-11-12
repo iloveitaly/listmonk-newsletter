@@ -20,3 +20,13 @@ export LISTMONK_TEST_EMAILS="test@example.com,test2@example.com"
 
 # cron-style schedule for when to generate the newsletter
 export SCHEDULE="0 6 * * 1"
+
+# optional: readwise reader integration
+# get your token from https://readwise.io/access_token
+export READWISE_API_TOKEN=""
+# tag to filter articles (e.g., "newsletter", "public", "share")
+export READWISE_TAG="newsletter"
+# optional: customize the section title in the email
+export READWISE_SECTION_TITLE="What I've Been Reading"
+# optional: days to look back on first run (default: 30)
+export READWISE_LOOKBACK_DAYS=30
