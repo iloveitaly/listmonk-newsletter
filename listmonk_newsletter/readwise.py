@@ -5,6 +5,7 @@ Used in generate_campaign() to build optional newsletter section.
 
 import os
 from pathlib import Path
+from pprint import pprint
 
 import backoff
 import click
@@ -155,21 +156,10 @@ def cli(token: str | None, tag: str | None, summary_days: int):
     )
 
     click.echo(f"\nFound {len(articles)} articles:\n")
-
-    for i, article in enumerate(articles, 1):
-        click.echo(f"{i}. {article.title}")
-        click.echo(f"   URL: {article.url}")
-        if article.author:
-            click.echo(f"   Author: {article.author}")
-        if article.word_count:
-            click.echo(f"   Words: {article.word_count}")
-        click.echo(f"   Tags: {', '.join(article.tags)}")
-        if article.summary:
-            click.echo(f"   Summary: {article.summary}")
-        click.echo()
+    pprint([article.model_dump() for article in articles])
 
     if articles:
-        if click.confirm("Update last checked timestamp?"):
+        if click.confirm("\nUpdate last checked timestamp?"):
             update_last_readwise_check(Instant.now())
             click.echo("Timestamp updated!")
 
