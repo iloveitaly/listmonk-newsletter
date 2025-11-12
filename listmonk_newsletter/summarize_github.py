@@ -98,6 +98,13 @@ def fetch_releases(username: str, last_checked: Instant, repos: list[dict]) -> l
 
 
 def fetch_contributed_repos(username: str, last_checked: Instant) -> list[dict]:
+    """
+    Find repositories where the user has authored commits.
+
+    GitHub does not provide an API to search release notes across all repositories.
+    As a workaround, we search for commits authored by the user to identify repositories
+    they've contributed to, then filter releases from those repos for ones mentioning the user.
+    """
     log.info("fetching repos with user commits", username=username)
     last_checked_str = last_checked.format_iso().split("T")[0]
 
@@ -138,6 +145,12 @@ def fetch_contributed_repos(username: str, last_checked: Instant) -> list[dict]:
 
 
 def fetch_cross_user_releases(username: str, last_checked: Instant, repos: list[dict]) -> list[dict]:
+    """
+    Fetch releases from contributed repositories where the user is mentioned.
+
+    Filters releases to only include those where the username appears in the release body,
+    as these are likely releases where the user is credited as a contributor.
+    """
     log.info("fetching cross-user releases mentioning user", username=username)
     releases = []
 
