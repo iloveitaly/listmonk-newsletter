@@ -351,7 +351,6 @@ def render_email_content(
     new_entries: list[feedparser.FeedParserDict],
     github_summary: str | None,
     readwise_articles: list[ReadwiseArticle],
-    readwise_section_title: str | None,
 ) -> str:
     # Create a Jinja2 environment and load the template file
     env = jinja2.Environment(
@@ -364,7 +363,6 @@ def render_email_content(
         entries=new_entries,
         github_summary=github_summary,
         readwise_articles=readwise_articles,
-        readwise_section_title=readwise_section_title,
     )
 
     inliner = css_inline.CSSInliner(keep_style_tags=True)
@@ -430,13 +428,11 @@ def generate_campaign():
 
     github_summary_html = build_github_summary_html()
     readwise_articles = build_readwise_articles()
-    readwise_section_title = config("READWISE_SECTION_TITLE", default=None)
 
     content = render_email_content(
         new_entries,
         github_summary_html,
         readwise_articles,
-        readwise_section_title
     )
     campaign_id = create_campaign(LISTMONK_TITLE, content)
 
