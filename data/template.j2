@@ -449,6 +449,20 @@
                 </td>
               </tr>
               {% endif %}
+              {% if readwise_articles %}
+              <tr>
+                <td style="padding-top: 30px;">
+                  <div class="heading-section"><h2>What I've Been Reading</h2></div>
+                  <div class="text-blog">
+                    <ul>
+                      {% for article in readwise_articles %}
+                      <li><a href="{{ article.url }}@TrackLink" target="_blank" style="color: #448ef6;">{{ article.title }}</a></li>
+                      {% endfor %}
+                    </ul>
+                  </div>
+                </td>
+              </tr>
+              {% endif %}
             </table>
           </td>
         </tr><!-- end: tr -->
