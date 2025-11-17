@@ -29,7 +29,7 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Build and push Docker images
-        uses: iloveitaly/github-action-nixpacks@main
+        uses: iloveitaly/github-action-railpack@main
         with:
           platforms: "linux/amd64,linux/arm64"
           push: true
