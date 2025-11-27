@@ -16,16 +16,17 @@ from markdown import markdown
 from structlog_config import configure_logger
 from whenever import Instant
 
+from .readwise import (
+    ReadwiseArticle,
+    get_last_readwise_check,
+    get_readwise_articles,
+    update_last_readwise_check,
+)
+from .subject_generation import generate_subject_line
 from .summarize_github import (
     fetch_github_activity,
     generate_summary_prompt,
     summarize_with_gemini,
-)
-from .readwise import (
-    get_last_readwise_check,
-    get_readwise_articles,
-    update_last_readwise_check,
-    ReadwiseArticle,
 )
 
 log = configure_logger()
@@ -46,6 +47,7 @@ LISTMONK_TITLE = config("LISTMONK_TITLE", cast=str)
 LISTMONK_TEMPLATE = config("LISTMONK_TEMPLATE", cast=int, default=None)
 LISTMONK_SEND_AT = config("LISTMONK_SEND_AT", cast=str, default=None)
 LISTMONK_TEST_EMAILS = config("LISTMONK_TEST_EMAILS", cast=Csv(), default=None)
+LISTMONK_GEMINI_SUBJECT = config("LISTMONK_GEMINI_SUBJECT", cast=bool, default=False)
 
 BACKOFF_LIMIT = 8
 
@@ -155,8 +157,8 @@ def build_readwise_articles() -> list[ReadwiseArticle]:
     readwise_tag = config("READWISE_TAG", default=None)
 
     if not readwise_token or not readwise_tag:
-        log.info(
-            "readwise articles skipped",
+        log.error(
+            "no token or tag, readwise articles skipped",
             readwise_token_present=readwise_token is not None,
             readwise_tag_present=readwise_tag is not None,
         )
@@ -420,6 +422,8 @@ def generate_campaign():
             | fp.lmap(add_image_link)
         )
 
+    new_entries = list(new_entries)
+
     if not new_entries:
         log.info("no new entries found")
         return
@@ -434,7 +438,27 @@ def generate_campaign():
         github_summary_html,
         readwise_articles,
     )
-    campaign_id = create_campaign(LISTMONK_TITLE, content)
+
+    subject_line = LISTMONK_TITLE
+
+    if LISTMONK_GEMINI_SUBJECT:
+        entries_for_subject = [
+            {
+                "title": str(entry.get("title", "")),
+                "summary": str(entry.get("summary") or entry.get("description", "")),
+                "link": str(entry.get("link", "")),
+            }
+            for entry in new_entries
+        ]
+
+        subject_line = generate_subject_line(
+            LISTMONK_TITLE,
+            entries_for_subject,
+            github_summary_html,
+        )
+
+    content = render_email_content(new_entries, github_summary_html, readwise_articles)
+    campaign_id = create_campaign(subject_line, content)
 
     send_successful = start_campaign(campaign_id)
 
@@ -446,7 +470,7 @@ def generate_campaign():
 
         log.info("campaign scheduled successfully, updating inspected feed links")
 
-        append_new_feed_links(entry_links_last_update, list(new_entries))
+    append_new_feed_links(entry_links_last_update, new_entries)
 
 
 @click.command()

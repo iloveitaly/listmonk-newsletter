@@ -3,18 +3,18 @@ Fetches articles read in Readwise Reader with specific tags.
 Used in generate_campaign() to build optional newsletter section.
 """
 
-import os
 from pathlib import Path
 from pprint import pprint
 
 import backoff
 import click
 import requests
+import structlog
 from decouple import config
 from pydantic import BaseModel
 from whenever import Instant, days
 
-from listmonk_newsletter import log
+log = structlog.get_logger()
 
 
 class ReadwiseArticle(BaseModel):
