@@ -13,7 +13,7 @@ dependencies = [
     "css-inline == 0.17.0",
     "dateparser == 1.2.2",
     "feedparser == 6.0.11",
-    "funcy-pipe == 0.13.0",
+    "funcy-pipe==0.14.0",
     "html2text == 2025.4.15",
     "jinja2 == 3.1.6",
     "lxml == 6.0.2",
