@@ -7,7 +7,7 @@ readme = "README.md"
 keywords = ["listmonk", "newsletter", "rss", "feed"]
 urls = { "Repository" = "https://github.com/iloveitaly/listmonk-newsletter" }
 dependencies = [
-    "apscheduler==3.11.1",
+    "apscheduler==3.11.2",
     "backoff == 2.2.1",
     "click==8.3.1",
     "css-inline==0.18.0",
