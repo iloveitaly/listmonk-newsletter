@@ -4,7 +4,7 @@ name = "listmonk-newsletter"
 version = "0.1.0"
 description = "Generate a newsletter digest from an rss feed and send it to a listmonk instance"
 readme = "README.md"
-keywords = ["listmonk", "newsletter", "rss", "feed"]
+keywords = ["listmonk", "newsletter", "rss", "feed", "auto-release"]
 urls = { "Repository" = "https://github.com/iloveitaly/listmonk-newsletter" }
 dependencies = [
     "apscheduler==3.11.2",
