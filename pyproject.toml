@@ -39,5 +39,6 @@ module-root = ""
 
 [dependency-groups]
 dev = [
+    "djlint>=1.36.4",
     "ipdb>=0.13.13",
 ]
