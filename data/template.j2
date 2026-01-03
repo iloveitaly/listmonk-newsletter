@@ -456,7 +456,7 @@
                   <div class="text-blog">
                     <ul>
                       {% for article in readwise_articles %}
-                      <li><a href="{{ article.url }}@TrackLink" target="_blank" style="color: #448ef6;">{{ article.title }}</a></li>
+                      <li><a href="{{ article.url }}@TrackLink" target="_blank" style="color: #448ef6;">{{ article.title }}</a>{% if article.notes %} {{ article.notes }}{% elif article.summary %} {{ article.summary }}{% endif %}</li>
                       {% endfor %}
                     </ul>
                   </div>
