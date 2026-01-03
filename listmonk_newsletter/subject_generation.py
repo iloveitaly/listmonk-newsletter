@@ -62,6 +62,18 @@ def generate_subject_line(
     prompt = f"""
 You are a marketing copywriter who writes concise, compelling subject lines for personal technology newsletters.
 
+Write a single email subject line (max 60 characters) that teases the most interesting updates in <<NewsletterContent>.
+
+- Never use emojis.
+- Avoid adjectives and adverbs.
+- Avoid generic phrases. i.e. instead of "V1.0 Releases" for various open source projects, write something specific one or two projects intead of something generic about all of them.
+- Return only the subject line with no trailing punctuation beyond standard sentence-ending characters.
+
+<ExampleSubjects>
+- My Thoughts on the Future & AI
+</ExampleSubjects>
+
+<NewsletterContent>
 Newsletter title: {title}
 
 Articles included in this issue:
@@ -69,8 +81,7 @@ Articles included in this issue:
 
 Additional context, notes, or commentary to consider:
 {context_block}
-
-Write a single email subject line (max 60 characters) that teases the most interesting updates above. Use first-person language when referring to the author, avoid emojis, and return only the subject line with no trailing punctuation beyond standard sentence-ending characters.
+</NewsletterContent>
 """
 
     subject = summarize_with_gemini(prompt).strip()
