@@ -424,6 +424,7 @@
               <tr>
                 <td style="padding-bottom: 30px;">
                   <table role="presentation" border="0" cellpadding="0" cellspacing="0" width="100%">
+                    {% if entry.image %}
                     <td valign="middle" width="25%">
                       <a href="{{ entry.link }}@TrackLink" target="_blank"><img src="{{ entry.image }}" alt=""
                           style="width: 100%; max-width: 600px; height: auto; margin: auto; display: block;"></a>
@@ -435,6 +436,15 @@
                         <p><a href="{{ entry.link }}@TrackLink" class="btn btn-primary">Read more</a></p>
                       </div>
                     </td>
+                    {% else %}
+                    <td valign="middle" width="100%">
+                      <div class="text-blog" style="text-align: left;">
+                        <h2><a href="{{ entry.link }}@TrackLink" target="_blank">{{ entry.title }}</a></h2>
+                        <p>{{ entry.description }}</p>
+                        <p><a href="{{ entry.link }}@TrackLink" class="btn btn-primary">Read more</a></p>
+                      </div>
+                    </td>
+                    {% endif %}
                   </table>
                 </td>
               </tr>
