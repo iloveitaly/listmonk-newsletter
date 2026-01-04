@@ -8,7 +8,8 @@ backup-db:
   cp -R data/ tmp/data/
 
 restore-db:
-  cp -R tmp/data/ data/
+  rm data/*.txt || true
+  cp tmp/data/*.txt data/
 
 pull-db:
   docker --context orangepi cp orange-listmonk-newsletter-1:/app/data/processed_links.txt data/

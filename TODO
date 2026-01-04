@@ -1,3 +1,4 @@
+- [ ] summarize title
 - [ ] replace about with random quotes?
 - [ ] include links to the stuff I've read via the reader API
 - [ ] report test email bug to listmonk https://github.com/knadh/listmonk/issues/1948
@@ -7,3 +8,4 @@
 - [ ] gpt-powered titles and summaries
 - [ ] pull github releases and add to digest with gpt summary
 - [ ] maybe add twitter content and add to update?
+- [ ] TrackLink on GitHub

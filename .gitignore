@@ -6,5 +6,6 @@ __pycache__
 
 data/processed_links.txt
 data/last_github_checked.txt
+data/last_readwise_checked.txt
 
 tmp/
