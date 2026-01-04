@@ -12,7 +12,7 @@ import requests
 import structlog
 from decouple import config
 from pydantic import BaseModel
-from whenever import Instant, days
+from whenever import Instant, ZonedDateTime, days
 
 log = structlog.get_logger()
 
@@ -24,8 +24,8 @@ class ReadwiseArticle(BaseModel):
     author: str | None = None
     word_count: int | None = None
     reading_progress: float
-    tags: list[str] = []
     updated_at: str
+    notes: str | None = None
     summary: str | None = None
 
 
@@ -33,7 +33,7 @@ def get_state_file_path() -> Path:
     return Path(__file__).parent.parent / "data" / "last_readwise_checked.txt"
 
 
-def get_last_readwise_check() -> Instant | None:
+def get_last_readwise_check() -> ZonedDateTime | None:
     state_file = get_state_file_path()
 
     if not state_file.exists():
@@ -43,13 +43,13 @@ def get_last_readwise_check() -> Instant | None:
     if not content:
         return None
 
-    return Instant.parse_common_iso(content)
+    return Instant.parse_iso(content).to_system_tz()
 
 
-def update_last_readwise_check(timestamp: Instant) -> None:
+def update_last_readwise_check(timestamp: ZonedDateTime) -> None:
     state_file = get_state_file_path()
     state_file.parent.mkdir(parents=True, exist_ok=True)
-    state_file.write_text(timestamp.format_common_iso())
+    state_file.write_text(timestamp.format_iso())
 
 
 @backoff.on_exception(
@@ -60,11 +60,55 @@ def update_last_readwise_check(timestamp: Instant) -> None:
 def get_readwise_articles(
     token: str,
     tag: str,
-    since: Instant | None = None,
+    since: ZonedDateTime | None = None,
     lookback_days: int = 30
 ) -> list[ReadwiseArticle]:
+    """
+    Example of the response:
+
+    {
+        "count": 1,
+        "nextPageCursor": null,
+        "results": [
+            {
+                "author": "Paris Martineau",
+                "category": "article",
+                "content": null,
+                "created_at": "2025-12-31T14:22:45.513827+00:00",
+                "first_opened_at": "2025-12-31T14:22:46.210000+00:00",
+                "id": "01kdtcmae9bs1kh5qjcytn7t9e",
+                "image_url": "https://article.images.consumerreports.org/image/upload/t_article_tout/v1760120451/prod/content/dam/CRO-Images-2025/Special%20Projects/CR-SP-InlineHero-Protein-Powders-and-Shakes-Contain-High-Levels-of-Lead-1025-v2",
+                "last_moved_at": "2026-01-01T17:45:04.810000+00:00",
+                "last_opened_at": "2026-01-02T14:36:00.545000+00:00",
+                "location": "archive",
+                "notes": "Continues to support the idea that avoiding weird abnormal not-real-food-foods is a good idea.",
+                "parent_id": null,
+                "published_date": "2025-10-14",
+                "reading_progress": 1,
+                "reading_time": "18 mins",
+                "saved_at": "2025-12-31T14:22:44.681000+00:00",
+                "site_name": "Consumer Reports",
+                "source": "Reader add from import URL",
+                "source_url": "https://www.consumerreports.org/lead/protein-powders-and-shakes-contain-high-levels-of-lead-a4206364640/?utm_source=signals.superpower.com&utm_medium=newsletter&utm_campaign=signals-28-the-10-health-shifts-that-actually-mattered-in-2025&_bhlid=38fb6b3828d2211bf79bd170efbd9794efe3f23d",
+                "summary": "CR tests of 23 popular protein powders and shakes found that most contain high levels of lead.",
+                "tags": {
+                    "public": {
+                        "created": 1767289502716,
+                        "name": "public",
+                        "type": "manual"
+                    }
+                },
+                "title": "Protein Powders and Shakes Contain High Levels of Lead",
+                "updated_at": "2026-01-02T14:37:28.911586+00:00",
+                "url": "https://read.readwise.io/read/01kdtcmae9bs1kh5qjcytn7t9e",
+                "word_count": 4593
+            }
+        ]
+    }
+    """
+
     if since is None:
-        since = Instant.now() - days(lookback_days)
+        since = Instant.now().to_system_tz().add(days=-lookback_days)
 
     articles = []
     page_cursor = None
@@ -72,8 +116,7 @@ def get_readwise_articles(
     while True:
         params = {
             "tag": tag,
-            "updatedAfter": since.format_common_iso(),
-            "location": "archive",
+            "updatedAfter": since.format_iso().split('[')[0],
         }
 
         if page_cursor:
@@ -82,7 +125,7 @@ def get_readwise_articles(
         log.info(
             "fetching readwise articles",
             tag=tag,
-            since=since.format_common_iso(),
+            since=since.format_iso(),
             page_cursor=page_cursor
         )
 
@@ -98,18 +141,49 @@ def get_readwise_articles(
         results = data.get("results", [])
 
         for doc in results:
-            if doc.get("reading_progress") == 1.0:
-                articles.append(ReadwiseArticle(
-                    id=doc["id"],
-                    url=doc["url"],
+            tags_dict = doc.get("tags", {})
+            if tag not in tags_dict:
+                log.info(
+                    "skipping article: tag not found",
+                    article_id=doc["id"],
+                    title=doc["title"]
+                )
+                continue
+
+            tag_created_ms = tags_dict[tag]["created"]
+            tag_created = Instant.from_timestamp_millis(tag_created_ms).to_system_tz()
+
+            if tag_created < since:
+                log.info(
+                    "skipping article: tag created before cutoff",
+                    article_id=doc["id"],
                     title=doc["title"],
-                    author=doc.get("author"),
-                    word_count=doc.get("word_count"),
-                    reading_progress=doc["reading_progress"],
-                    tags=doc.get("tags", []),
-                    updated_at=doc["updated"],
-                    summary=doc.get("summary")
-                ))
+                    tag_created=tag_created.format_iso(),
+                    cutoff=since.format_iso()
+                )
+                continue
+
+            notes = doc.get("notes")
+            summary = doc.get("summary")
+
+            if not notes:
+                log.warning(
+                    "article missing notes, using summary instead",
+                    article_id=doc["id"],
+                    title=doc["title"]
+                )
+
+            articles.append(ReadwiseArticle(
+                id=doc["id"],
+                url=doc["source_url"],
+                title=doc["title"],
+                author=doc.get("author"),
+                word_count=doc.get("word_count"),
+                reading_progress=doc["reading_progress"],
+                updated_at=doc["updated_at"],
+                notes=notes,
+                summary=summary
+            ))
 
         page_cursor = data.get("nextPageCursor")
         if not page_cursor:
@@ -144,7 +218,7 @@ def cli(token: str | None, tag: str | None, summary_days: int):
     last_checked = get_last_readwise_check()
 
     if last_checked:
-        click.echo(f"Last checked: {last_checked.format_common_iso()}")
+        click.echo(f"Last checked: {last_checked.format_iso()}")
     else:
         click.echo("No previous check found - using lookback period")
 
@@ -157,11 +231,6 @@ def cli(token: str | None, tag: str | None, summary_days: int):
 
     click.echo(f"\nFound {len(articles)} articles:\n")
     pprint([article.model_dump() for article in articles])
-
-    if articles:
-        if click.confirm("\nUpdate last checked timestamp?"):
-            update_last_readwise_check(Instant.now())
-            click.echo("Timestamp updated!")
 
 
 if __name__ == "__main__":

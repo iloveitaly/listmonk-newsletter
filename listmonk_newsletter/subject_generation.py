@@ -60,18 +60,28 @@ def generate_subject_line(
     context_block = _format_additional_context(additional_context)
 
     prompt = f"""
-You are a marketing copywriter who writes concise, compelling subject lines for personal technology newsletters.
+You are a no-nonsense marketing copywriter for a personal developer-focused technology newsletter.
 
-Write a single email subject line (max 60 characters) that teases the most interesting updates in <<NewsletterContent>.
+Write a single email subject line (max 60 characters) based on the <NewsletterContent>.
 
-- Never use emojis.
-- Avoid adjectives and adverbs.
-- Avoid generic phrases. i.e. instead of "V1.0 Releases" for various open source projects, write something specific one or two projects intead of something generic about all of them.
-- Return only the subject line with no trailing punctuation beyond standard sentence-ending characters.
+**Priorities:**
+1. The subject MUST mention the primary Article title.
+2. If space permits (under 60 chars), append the name of the most significant software release (prioritize v1.0.0 releases or new projects).
 
-<ExampleSubjects>
-- My Thoughts on the Future & AI
-</ExampleSubjects>
+**Style Guidelines:**
+- Format: Title Case.
+- No emojis. No trailing punctuation.
+- No "fluff" words (e.g., "Deep Dive", "My Thoughts", "Update").
+- Direct and noun-heavy.
+- Connect ideas with "&" or "+" to save space.
+
+**Input Analysis:**
+- Ignore "What I've been reading."
+- Ignore minor bug fixes or patch releases (e.g., v0.2.9).
+
+<Examples>
+- The Future of AI & TypeScript Templates
+</Examples>
 
 <NewsletterContent>
 Newsletter title: {title}
@@ -83,6 +93,8 @@ Additional context, notes, or commentary to consider:
 {context_block}
 </NewsletterContent>
 """
+
+    log.debug("subject generation prompt", prompt=prompt)
 
     subject = summarize_with_gemini(prompt).strip()
 

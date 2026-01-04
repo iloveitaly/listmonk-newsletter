@@ -35,6 +35,7 @@ def summarize_with_gemini(prompt: str) -> str:
 
     model_name = config("GEMINI_MODEL", default="gemini-flash-latest")
     log.info("requesting gemini summary", model=model_name)
+    log.debug("gemini summary prompt", prompt=prompt)
 
     provider = GoogleProvider(api_key=api_key)
     model = GoogleModel(model_name, provider=provider)
