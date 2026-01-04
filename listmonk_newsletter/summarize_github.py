@@ -78,22 +78,24 @@ def fetch_releases(username: str, last_checked: Instant, repos: list[dict]) -> l
         repo_releases = github_api_get(releases_url)
         if not repo_releases:
             continue
-        latest = repo_releases[0]
-        release_date = Instant.parse_iso(latest["published_at"])
-        if release_date <= last_checked:
-            continue
-        releases.append(
-            {
-                "repo": repo_name,
-                "tag": latest["tag_name"],
-                "date": latest["published_at"],
-                "name": latest["name"] or latest["tag_name"],
-                "repo_url": repo["html_url"],
-                "url": latest["html_url"],
-                "description": latest["body"] if latest["body"] else "No description",
-                "owner": username,
-            }
-        )
+
+        for release in repo_releases:
+            release_date = Instant.parse_iso(release["published_at"])
+            if release_date <= last_checked:
+                break
+
+            releases.append(
+                {
+                    "repo": repo_name,
+                    "tag": release["tag_name"],
+                    "date": release["published_at"],
+                    "name": release["name"] or release["tag_name"],
+                    "repo_url": repo["html_url"],
+                    "url": release["html_url"],
+                    "description": release["body"] if release["body"] else "No description",
+                    "owner": username,
+                }
+            )
     log.info("releases fetched", count=len(releases), username=username)
     return releases
 
@@ -259,7 +261,7 @@ def generate_summary_prompt(activity: dict, username: str = "iloveitaly") -> str
 
 You are an expert newsletter writer specializing in concise and engaging summaries of GitHub activity:
 
-* Summarize the following GitHub activity for my personal email newsletter.
+* Summarize the following GitHub activity for my personal developer-focused technology email newsletter.
 * Keep the tone friendly, casual yet professional, and highlight key updates in a concise manner.
 * Include sections for new releases and new repositories. If there are no updates in a section, note that explicitly.
 * If there is an entry in new releases and new repositories, omit it from new releases.
@@ -272,9 +274,12 @@ You are an expert newsletter writer specializing in concise and engaging summari
 * Use `## New Projects` and `## New Releases` as the section headers.
 * No horizontal lines.
 * Write in the 1st person.
+* When multiple releases exist for the same repository, consolidate them into a single entry that summarizes all the changes across those releases.
+* For consolidated releases, mention the version range (e.g., "v1.2.0 to v1.5.0") or note that there were multiple releases.
 
-Write a summary that is clear, concise, and suitable for a newsletter audience. Here's an example:
+Write a summary that is clear, concise, and suitable for a newsletter audience.
 
+<ExampleSummary>
 ```markdown
 Some major feature additions in existing libraries, particularly in
 data modeling and logging tools, alongside the launch of six focused new
@@ -287,9 +292,10 @@ projects.
 
 ## New Releases
 
-* [activemodel](https://github.com/iloveitaly/activemodel). Added new query methods to the query wrapper, including an efficient `exists()` function and a `sample()` method for random row selection.
+* [activemodel](https://github.com/iloveitaly/activemodel) (v2.1.0 to v2.3.0). Three releases with significant improvements: added new query methods including efficient `exists()` and `sample()` functions, improved type safety, and enhanced documentation.
 * [aiautocommit](https://github.com/iloveitaly/aiautocommit). Integrated difftastic for structured diff visualization.
 ```
+</ExampleSummary>
 
 Below is the GitHub activity data to summarize.
 
