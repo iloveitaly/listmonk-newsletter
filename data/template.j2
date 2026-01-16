@@ -379,7 +379,20 @@
     }
 
 
-    @media screen and (max-width: 500px) {}
+    @media screen and (max-width: 500px) {
+      .footer-column {
+        display: block !important;
+        width: 100% !important;
+      }
+
+      .footer-content-left {
+        padding-right: 0 !important;
+      }
+
+      .footer-content-right {
+        padding-left: 0 !important;
+      }
+    }
   </style>
 
 
@@ -484,10 +497,10 @@
           <td valign="middle" class="bg_black footer email-section">
             <table>
               <tr>
-                <td valign="top" width="50%" style="padding-top: 20px;">
+                <td valign="top" width="50%" style="padding-top: 20px;" class="footer-column">
                   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                     <tr>
-                      <td style="text-align: left; padding-right: 10px;">
+                      <td style="text-align: left; padding-right: 10px;" class="footer-content-left">
                         <h3 class="heading">About</h3>
                         {# TODO could be fun to pick a random quote that I like here #}
                         <p>I'm a technologist and entrepreneur who enjoys blogging about what I'm learning and thinking
@@ -496,10 +509,10 @@
                     </tr>
                   </table>
                 </td>
-                <td valign="top" width="50%" style="padding-top: 20px;">
+                <td valign="top" width="50%" style="padding-top: 20px;" class="footer-column">
                   <table role="presentation" cellspacing="0" cellpadding="0" border="0" width="100%">
                     <tr>
-                      <td style="text-align: left; padding-left: 10px;">
+                      <td style="text-align: left; padding-left: 10px;" class="footer-content-right">
                         <h3 class="heading">Connect</h3>
                         <ul>
                           <li><a href="https://mikebian.co/about@TrackLink">About</a></li>
