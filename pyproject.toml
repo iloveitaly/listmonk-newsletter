@@ -10,7 +10,7 @@ dependencies = [
     "apscheduler==3.11.2",
     "backoff == 2.2.1",
     "click==8.3.1",
-    "css-inline==0.19.0",
+    "css-inline==0.19.1",
     "dateparser == 1.2.2",
     "feedparser==6.0.12",
     "funcy-pipe==0.14.0",
