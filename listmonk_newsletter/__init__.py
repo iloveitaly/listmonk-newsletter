@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 
 import backoff
@@ -14,7 +13,7 @@ from decouple import Csv, config
 from lxml import etree
 from markdown import markdown
 from structlog_config import configure_logger
-from whenever import Instant
+from whenever import Instant, ZonedDateTime
 
 from .readwise import (
     ReadwiseArticle,
@@ -108,7 +107,7 @@ def write_last_github_checked(timestamp: str) -> None:
     GITHUB_LAST_CHECKED_FILE.write_text(timestamp, encoding="utf-8")
 
 
-def build_github_summary_html() -> str | None:
+def build_github_summary_html() -> tuple[str | None, str | None]:
     github_token = config("GITHUB_TOKEN", default=None)
     google_api_key = config("GOOGLE_API_KEY", default=None)
 
@@ -118,7 +117,7 @@ def build_github_summary_html() -> str | None:
             github_token_present=github_token is not None,
             google_api_key_present=google_api_key is not None,
         )
-        return None
+        return None, None
 
     username = config("GITHUB_USERNAME")
     days = config("GITHUB_SUMMARY_DAYS", cast=int, default=30)
@@ -137,8 +136,7 @@ def build_github_summary_html() -> str | None:
 
     if not activity.get("releases") and not activity.get("new_repos"):
         log.info("github summary skipped", reason="no_activity")
-        write_last_github_checked(next_checkpoint)
-        return None
+        return None, next_checkpoint
 
     prompt = generate_summary_prompt(activity, username)
     summary_markdown = summarize_with_gemini(prompt)
@@ -147,12 +145,10 @@ def build_github_summary_html() -> str | None:
 
     log.info("github summary generated")
 
-    write_last_github_checked(next_checkpoint)
-
-    return summary_html
+    return summary_html, next_checkpoint
 
 
-def build_readwise_articles() -> list[ReadwiseArticle]:
+def build_readwise_articles() -> tuple[list[ReadwiseArticle], ZonedDateTime | None]:
     readwise_token = config("READWISE_API_TOKEN", default=None)
     readwise_tag = config("READWISE_TAG", default=None)
 
@@ -162,7 +158,7 @@ def build_readwise_articles() -> list[ReadwiseArticle]:
             readwise_token_present=readwise_token is not None,
             readwise_tag_present=readwise_tag is not None,
         )
-        return []
+        return [], None
 
     summary_days = config("READWISE_SUMMARY_DAYS", cast=int, default=30)
 
@@ -178,20 +174,18 @@ def build_readwise_articles() -> list[ReadwiseArticle]:
     )
 
     if articles:
-        update_last_readwise_check(Instant.now())
         log.info("readwise articles fetched", count=len(articles))
+        return articles, Instant.now().to_system_tz()
 
-    return articles
+    return articles, None
 
 
-def populate_preexisting_entries(entry_links: list[str]) -> bool:
-    if not os.path.exists(FEED_ENTRY_LINKS_FILE):
+def is_first_feed_entry_run() -> bool:
+    if not FEED_ENTRY_LINKS_FILE.exists():
         log.info(
             "Feed entry links file does not exist: "
             f"{FEED_ENTRY_LINKS_FILE}. Populating it for the first time..."
         )
-
-        FEED_ENTRY_LINKS_FILE.write_text("\n".join(entry_links), encoding="utf-8")
 
         return True
 
@@ -201,14 +195,15 @@ def populate_preexisting_entries(entry_links: list[str]) -> bool:
             f"{FEED_ENTRY_LINKS_FILE}. Populating it for the first time..."
         )
 
-        FEED_ENTRY_LINKS_FILE.write_text("\n".join(entry_links), encoding="utf-8")
-
         return True
 
     return False
 
 
 def read_feed_entry_links_file() -> list[str]:
+    if not FEED_ENTRY_LINKS_FILE.exists():
+        return []
+
     content = FEED_ENTRY_LINKS_FILE.read_text(encoding="utf-8").strip()
 
     if not content:
@@ -238,6 +233,10 @@ def append_new_feed_links(existing_links: list[str], new_entries: list[feedparse
     updated_links = [*existing_links, *additions]
 
     FEED_ENTRY_LINKS_FILE.write_text("\n".join(updated_links), encoding="utf-8")
+
+
+def write_feed_entry_links(entry_links: list[str]) -> None:
+    FEED_ENTRY_LINKS_FILE.write_text("\n".join(entry_links), encoding="utf-8")
 
 
 @backoff.on_exception(
@@ -393,7 +392,7 @@ def generate_campaign():
     # On first run (feed_entry_links.txt does not exist)
     entry_links = [str(entry.link) for entry in feed.entries]
 
-    first_run = populate_preexisting_entries(entry_links)
+    first_run = is_first_feed_entry_run()
 
     entry_links_last_update = read_feed_entry_links_file()
 
@@ -430,8 +429,8 @@ def generate_campaign():
 
     log.info("new entries found", count=len(new_entries))
 
-    github_summary_html = build_github_summary_html()
-    readwise_articles = build_readwise_articles()
+    github_summary_html, github_checkpoint = build_github_summary_html()
+    readwise_articles, readwise_checkpoint = build_readwise_articles()
 
     content = render_email_content(
         new_entries,
@@ -470,7 +469,16 @@ def generate_campaign():
 
         log.info("campaign scheduled successfully, updating inspected feed links")
 
-    append_new_feed_links(entry_links_last_update, new_entries)
+        if github_checkpoint:
+            write_last_github_checked(github_checkpoint)
+
+        if readwise_checkpoint:
+            update_last_readwise_check(readwise_checkpoint)
+
+        if first_run:
+            write_feed_entry_links(entry_links)
+        else:
+            append_new_feed_links(entry_links_last_update, new_entries)
 
 
 @click.command()
