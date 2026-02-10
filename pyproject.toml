@@ -6,6 +6,7 @@ description = "Generate a newsletter digest from an rss feed and send it to a li
 readme = "README.md"
 keywords = ["listmonk", "newsletter", "rss", "feed", "auto-release"]
 urls = { "Repository" = "https://github.com/iloveitaly/listmonk-newsletter" }
+requires-python = ">=3.14"
 dependencies = [
     "apscheduler==3.11.2",
     "backoff == 2.2.1",
@@ -38,8 +39,4 @@ build-backend = "uv_build"
 module-root = ""
 
 [dependency-groups]
-dev = [
-    "beautiful-traceback>=0.2.0",
-    "djlint>=1.36.4",
-    "ipdb>=0.13.13",
-]
+dev = ["beautiful-traceback>=0.2.0", "djlint>=1.36.4", "ipdb>=0.13.13"]
