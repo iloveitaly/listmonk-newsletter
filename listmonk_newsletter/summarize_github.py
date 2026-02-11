@@ -34,12 +34,18 @@ def summarize_with_gemini(prompt: str) -> str:
         raise RuntimeError("GOOGLE_API_KEY must be set when using --summarize")
 
     model_name = config("GEMINI_MODEL", default="gemini-flash-latest")
+    ai_retries = config("AI_RETRIES", cast=int, default=10)
     log.info("requesting gemini summary", model=model_name)
     log.debug("gemini summary prompt", prompt=prompt)
 
     provider = GoogleProvider(api_key=api_key)
     model = GoogleModel(model_name, provider=provider)
-    agent = Agent(model, output_type=str)
+    agent = Agent(
+        model,
+        output_type=str,
+        retries=ai_retries,
+        output_retries=ai_retries,
+    )
 
     result = agent.run_sync(prompt)
 
