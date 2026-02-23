@@ -991,6 +991,18 @@ wheels = [
 ]
 
 [[package]]
+name = "pytest-plugin-utils"
+version = "0.1.0"
+source = { registry = "https://pypi.org/simple" }
+dependencies = [
+    { name = "structlog-config" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/de/6a/e5ee2c91f789c1f71a92c76328d62aee0b885d210396e479e25e102921c5/pytest_plugin_utils-0.1.0.tar.gz", hash = "sha256:2e12971d46eebefda7c99d3936be946a51482e1519db59855ef1104cefa6c852", size = 6258, upload-time = "2026-02-10T23:28:48.341Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/5f/60/10b0a7a1b6a705eebdee9948b8a03042c723c05d41ddcd79589695183c6e/pytest_plugin_utils-0.1.0-py3-none-any.whl", hash = "sha256:cf0d359db06cd28abbb9197ea46ca643dc227ff59a89f095081272d2c52d829c", size = 7532, upload-time = "2026-02-10T23:28:48.985Z" },
+]
+
+[[package]]
 name = "python-dateutil"
 version = "2.9.0.post0"
 source = { registry = "https://pypi.org/simple" }
@@ -1182,17 +1194,18 @@ wheels = [
 
 [[package]]
 name = "structlog-config"
-version = "0.10.0"
+version = "0.11.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "fastapi-ipware" },
     { name = "orjson" },
+    { name = "pytest-plugin-utils" },
     { name = "python-decouple-typed" },
     { name = "structlog" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/99/06/e07b6fccae58c3db317d5611d024dacab6bb6496e745cfa607522fb25c06/structlog_config-0.10.0.tar.gz", hash = "sha256:a71b57a67c3b009ae8dca1a729a87657beb420325af63fffd440ffa55b5ba851", size = 21628, upload-time = "2026-02-06T21:35:50.014Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/e3/79/fdc243029876737ce6b72c99ea554ecf5197288f54e55f5b4831a62f52c1/structlog_config-0.11.0.tar.gz", hash = "sha256:742a35facc56d0ef1b6c43f2ae0abce5de8ab8830a0410764d67bdb492c807cb", size = 24317, upload-time = "2026-02-18T03:46:12.426Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/70/c4/6971ebe7106c692c42b1769daea6c7c583f8857f06229aba280724e568e9/structlog_config-0.10.0-py3-none-any.whl", hash = "sha256:02b818be4e1f8d99cf31c92686aab1d5d2ff6dc7f735bbfa9286cb94da3068a7", size = 26933, upload-time = "2026-02-06T21:35:51.288Z" },
+    { url = "https://files.pythonhosted.org/packages/db/b8/48649dc29eb8f33685cd83a8ab91d8ced6aee25057849584327e0656ce4b/structlog_config-0.11.0-py3-none-any.whl", hash = "sha256:16430a692ab8ffb785cd93fa56c0893932160556b4d2c4287ce8ec5a04b46692", size = 29566, upload-time = "2026-02-18T03:46:11.113Z" },
 ]
 
 [[package]]
