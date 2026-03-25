@@ -2,12 +2,15 @@ layout uv
 
 export LISTMONK_URL="https://listmonk.app"
 export LISTMONK_USERNAME="username"
-export LISTMONK_PASSWORD = "password"
+export LISTMONK_API_TOKEN="your_api_token_here"
 
 export RSS_URL = "https://blog.com/feed"
 
 # which listmonk template to use, should be an empty template
 export LISTMONK_TEMPLATE = 4
+
+# comma-separated list of listmonk list IDs to send the campaign to
+export LISTMONK_LISTS=1
 
 # title to use for the campaign
 export LISTMONK_TITLE="Latest Posts from Example"

@@ -44,6 +44,7 @@ LISTMONK_API_TOKEN = config("LISTMONK_API_TOKEN", cast=str)
 LISTMONK_TITLE = config("LISTMONK_TITLE", cast=str)
 
 LISTMONK_TEMPLATE = config("LISTMONK_TEMPLATE", cast=int, default=None)
+LISTMONK_LISTS = config("LISTMONK_LISTS", cast=Csv(cast=int))
 LISTMONK_SEND_AT = config("LISTMONK_SEND_AT", cast=str, default=None)
 LISTMONK_TEST_EMAILS = config("LISTMONK_TEST_EMAILS", cast=Csv(), default=None)
 LISTMONK_GEMINI_SUBJECT = config("LISTMONK_GEMINI_SUBJECT", cast=bool, default=False)
@@ -284,8 +285,7 @@ def create_campaign(title: str, body: str) -> int:
     json_data = {
         "name": title,
         "subject": title,
-        # TODO list reference should be dynamic
-        "lists": [1],
+        "lists": LISTMONK_LISTS,
         "content_type": "html",
         "body": body,
         "send_at": send_at,
@@ -303,6 +303,9 @@ def create_campaign(title: str, body: str) -> int:
         json=json_data,
         headers=LISTMONK_REQUEST_HEADERS,
     )
+
+    if not response.ok:
+        log.error("create_campaign failed", status=response.status_code, body=response.text)
 
     response.raise_for_status()
 
@@ -327,6 +330,9 @@ def send_tests(campaign_id: int, emails: list[str]):
         headers=LISTMONK_REQUEST_HEADERS,
     )
 
+    if not response.ok:
+        log.error("send_tests failed", status=response.status_code, body=response.text)
+
     response.raise_for_status()
 
 
@@ -337,11 +343,16 @@ def send_tests(campaign_id: int, emails: list[str]):
     giveup=should_abort_retry,
 )
 def start_campaign(campaign_id: int) -> bool:
+    status = "scheduled" if LISTMONK_SEND_AT else "running"
+
     response = requests.put(
         f"{LISTMONK_URL}/api/campaigns/{campaign_id}/status",
-        json={"status": "scheduled"},
+        json={"status": status},
         headers=LISTMONK_REQUEST_HEADERS,
     )
+
+    if not response.ok:
+        log.error("start_campaign failed", status=response.status_code, body=response.text)
 
     response.raise_for_status()
 
@@ -459,14 +470,13 @@ def generate_campaign():
     content = render_email_content(new_entries, github_summary_html, readwise_articles)
     campaign_id = create_campaign(subject_line, content)
 
-    send_successful = start_campaign(campaign_id)
+    if LISTMONK_TEST_EMAILS:
+        send_tests(campaign_id, LISTMONK_TEST_EMAILS)
+        send_successful = True
+    else:
+        send_successful = start_campaign(campaign_id)
 
     if send_successful:
-        # TODO this is currently broken on the listmonk side
-        # TODO this isn't going to be fixed, should fix the payload being sent tot he
-        # if LISTMONK_TEST_EMAILS:
-        #     send_tests(campaign_id, LISTMONK_TEST_EMAILS)
-
         log.info("campaign scheduled successfully, updating inspected feed links")
 
         if github_checkpoint:
