@@ -4,7 +4,6 @@ import backoff
 import click
 import css_inline
 import dateparser
-import feedparser
 import funcy_pipe as fp
 import html2text
 import jinja2
@@ -15,6 +14,7 @@ from markdown import markdown
 from structlog_config import configure_logger
 from whenever import Instant, ZonedDateTime
 
+from .feed import Entry, rss as feed_rss, discourse as feed_discourse
 from .readwise import (
     ReadwiseArticle,
     get_last_readwise_check,
@@ -36,7 +36,8 @@ FEED_ENTRY_LINKS_FILE = DATA_DIRECTORY / "processed_links.txt"
 CONTENT_TEMPLATE_FILE = DATA_DIRECTORY / "template.j2"
 GITHUB_LAST_CHECKED_FILE = DATA_DIRECTORY / "last_github_checked.txt"
 
-RSS_URL = config("RSS_URL", cast=str)
+RSS_URL = config("RSS_URL", default=None)
+DISCOURSE_JSON_URL = config("DISCOURSE_JSON_URL", default=None)
 
 LISTMONK_URL = config("LISTMONK_URL", cast=str)
 LISTMONK_USERNAME = config("LISTMONK_USERNAME", cast=str)
@@ -213,7 +214,7 @@ def read_feed_entry_links_file() -> list[str]:
     return content.split("\n")
 
 
-def append_new_feed_links(existing_links: list[str], new_entries: list[feedparser.FeedParserDict]) -> None:
+def append_new_feed_links(existing_links: list[str], new_entries: list[Entry]) -> None:
     known_links = set(existing_links)
 
     additions = []
@@ -360,7 +361,7 @@ def start_campaign(campaign_id: int) -> bool:
 
 
 def render_email_content(
-    new_entries: list[feedparser.FeedParserDict],
+    new_entries: list[Entry],
     github_summary: str | None,
     readwise_articles: list[ReadwiseArticle],
 ) -> str:
@@ -384,24 +385,20 @@ def render_email_content(
 
 
 def generate_campaign():
-    log.info("pulling feed", feed_url=RSS_URL)
+    assert RSS_URL or DISCOURSE_JSON_URL, "Either RSS_URL or DISCOURSE_JSON_URL must be set"
 
-    feed: feedparser.FeedParserDict = feedparser.parse(RSS_URL)
+    if DISCOURSE_JSON_URL:
+        log.info("pulling discourse feed", feed_url=DISCOURSE_JSON_URL)
+        all_entries = feed_discourse.fetch_entries(DISCOURSE_JSON_URL)
+    else:
+        log.info("pulling rss feed", feed_url=RSS_URL)
+        all_entries = feed_rss.fetch_entries(RSS_URL)
 
-    # strange way to report an error...
-    if "bozo_exception" in feed:
-        log.error("Feed parsing error", error=feed["bozo_exception"])
+    if not all_entries:
         return
-
-    if not feed:
-        log.error("feed is empty")
-        return
-
-    # Sort feed entries chronologically
-    feed.entries.reverse()
 
     # On first run (feed_entry_links.txt does not exist)
-    entry_links = [str(entry.link) for entry in feed.entries]
+    entry_links = [str(entry.link) for entry in all_entries]
 
     first_run = is_first_feed_entry_run()
 
@@ -410,26 +407,26 @@ def generate_campaign():
     log.info(
         "checking for new feed entries",
         existing_entries=len(entry_links_last_update),
-        feed_entries=len(feed.entries),
+        feed_entries=len(all_entries),
     )
 
-    def add_image_link(entry):
-        og_image = get_og_image(entry.link)
-        entry["image"] = og_image
+    def add_og_image(entry):
+        if not entry.get("image"):
+            entry["image"] = get_og_image(entry.link)
         return entry
 
     if first_run:
-        log.info("first run, including recent entries", count=min(5, len(feed.entries)))
+        log.info("first run, including recent entries", count=min(5, len(all_entries)))
 
         new_entries = (
-            feed.entries[-5:]
-            | fp.lmap(add_image_link)
+            all_entries[:5][::-1]
+            | fp.lmap(add_og_image)
         )
     else:
         new_entries = (
-            feed.entries
+            all_entries
             | fp.filter(lambda e: e.link not in entry_links_last_update)
-            | fp.lmap(add_image_link)
+            | fp.lmap(add_og_image)
         )
 
     new_entries = list(new_entries)

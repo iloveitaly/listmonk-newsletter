@@ -4,7 +4,9 @@ export LISTMONK_URL="https://listmonk.app"
 export LISTMONK_USERNAME="username"
 export LISTMONK_API_TOKEN="your_api_token_here"
 
-export RSS_URL = "https://blog.com/feed"
+# use one or the other
+export RSS_URL="https://blog.com/feed"
+# export DISCOURSE_JSON_URL="https://discourse.example.com/latest.json"
 
 # which listmonk template to use, should be an empty template
 export LISTMONK_TEMPLATE = 4
