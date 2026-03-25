@@ -8,6 +8,9 @@ export LISTMONK_API_TOKEN="your_api_token_here"
 export RSS_URL="https://blog.com/feed"
 # export DISCOURSE_JSON_URL="https://discourse.example.com/latest.json"
 
+# maximum number of feed items to include in a campaign (default: 5)
+# export FEED_MAX_ITEMS=5
+
 # which listmonk template to use, should be an empty template
 export LISTMONK_TEMPLATE = 4
 

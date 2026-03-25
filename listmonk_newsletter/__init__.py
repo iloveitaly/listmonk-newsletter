@@ -45,6 +45,7 @@ LISTMONK_API_TOKEN = config("LISTMONK_API_TOKEN", cast=str)
 LISTMONK_TITLE = config("LISTMONK_TITLE", cast=str)
 
 LISTMONK_TEMPLATE = config("LISTMONK_TEMPLATE", cast=int, default=None)
+FEED_MAX_ITEMS = config("FEED_MAX_ITEMS", cast=int, default=5)
 LISTMONK_LISTS = config("LISTMONK_LISTS", cast=Csv(cast=int))
 LISTMONK_SEND_AT = config("LISTMONK_SEND_AT", cast=str, default=None)
 LISTMONK_TEST_EMAILS = config("LISTMONK_TEST_EMAILS", cast=Csv(), default=None)
@@ -416,10 +417,10 @@ def generate_campaign():
         return entry
 
     if first_run:
-        log.info("first run, including recent entries", count=min(5, len(all_entries)))
+        log.info("first run, including recent entries", count=min(FEED_MAX_ITEMS, len(all_entries)))
 
         new_entries = (
-            all_entries[:5][::-1]
+            all_entries[:FEED_MAX_ITEMS][::-1]
             | fp.lmap(add_og_image)
         )
     else:
