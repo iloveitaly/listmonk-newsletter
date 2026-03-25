@@ -11,6 +11,9 @@ export RSS_URL="https://blog.com/feed"
 # maximum number of feed items to include in a campaign (default: 5)
 # export FEED_MAX_ITEMS=5
 
+# template file to use for the campaign email, relative to the data/ directory (default: template.j2)
+# export TEMPLATE_FILE=template.j2
+
 # which listmonk template to use, should be an empty template
 export LISTMONK_TEMPLATE = 4
 

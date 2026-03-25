@@ -33,7 +33,7 @@ log = configure_logger()
 ROOT_DIRECTORY = Path(__file__).parent.parent.resolve()
 DATA_DIRECTORY = ROOT_DIRECTORY / "data"
 FEED_ENTRY_LINKS_FILE = DATA_DIRECTORY / "processed_links.txt"
-CONTENT_TEMPLATE_FILE = DATA_DIRECTORY / "template.j2"
+CONTENT_TEMPLATE_FILE = DATA_DIRECTORY / config("TEMPLATE_FILE", default="template.j2")
 GITHUB_LAST_CHECKED_FILE = DATA_DIRECTORY / "last_github_checked.txt"
 
 RSS_URL = config("RSS_URL", default=None)
