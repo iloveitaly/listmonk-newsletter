@@ -1,3 +1,4 @@
+from datetime import datetime
 from pathlib import Path
 
 import backoff
@@ -447,7 +448,7 @@ def generate_campaign():
         readwise_articles,
     )
 
-    subject_line = LISTMONK_TITLE
+    subject_line = datetime.now().strftime(LISTMONK_TITLE)
 
     if LISTMONK_GEMINI_SUBJECT:
         entries_for_subject = [
@@ -460,7 +461,7 @@ def generate_campaign():
         ]
 
         subject_line = generate_subject_line(
-            LISTMONK_TITLE,
+            subject_line,
             entries_for_subject,
             github_summary_html,
         )
