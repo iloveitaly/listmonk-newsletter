@@ -366,6 +366,7 @@ def render_email_content(
     new_entries: list[Entry],
     github_summary: str | None,
     readwise_articles: list[ReadwiseArticle],
+    title: str = "",
 ) -> str:
     # Create a Jinja2 environment and load the template file
     env = jinja2.Environment(
@@ -378,6 +379,7 @@ def render_email_content(
         entries=new_entries,
         github_summary=github_summary,
         readwise_articles=readwise_articles,
+        title=title,
     )
 
     inliner = css_inline.CSSInliner(keep_style_tags=True)
@@ -442,12 +444,6 @@ def generate_campaign():
     github_summary_html, github_checkpoint = build_github_summary_html()
     readwise_articles, readwise_checkpoint = build_readwise_articles()
 
-    content = render_email_content(
-        new_entries,
-        github_summary_html,
-        readwise_articles,
-    )
-
     subject_line = datetime.now().strftime(LISTMONK_TITLE)
 
     if LISTMONK_GEMINI_SUBJECT:
@@ -466,7 +462,7 @@ def generate_campaign():
             github_summary_html,
         )
 
-    content = render_email_content(new_entries, github_summary_html, readwise_articles)
+    content = render_email_content(new_entries, github_summary_html, readwise_articles, subject_line)
     campaign_id = create_campaign(subject_line, content)
 
     if LISTMONK_TEST_EMAILS:
