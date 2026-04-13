@@ -17,7 +17,7 @@ dependencies = [
     "funcy-pipe==0.14.0",
     "html2text == 2025.4.15",
     "jinja2 == 3.1.6",
-    "lxml == 6.0.2",
+    "lxml==6.0.4",
     "markdown>=3.10",
     "pydantic-ai-slim[google]>=1.12.0",
     "python-decouple-typed == 3.11.0",
