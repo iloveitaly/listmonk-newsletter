@@ -23,7 +23,7 @@ dependencies = [
     "python-decouple-typed == 3.11.0",
     "requests==2.33.1",
     "structlog-config>=0.4.2",
-    "tzdata>=2025.2",
+    "tzdata>=2026.2",
     "whenever>=0.9.3",
 ]
 
