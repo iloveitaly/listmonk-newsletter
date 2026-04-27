@@ -10,7 +10,7 @@ requires-python = ">=3.14"
 dependencies = [
     "apscheduler==3.11.2",
     "backoff == 2.2.1",
-    "click==8.3.2",
+    "click==8.3.3",
     "css-inline==0.20.2",
     "dateparser==1.4.0",
     "feedparser==6.0.12",
