@@ -22,7 +22,7 @@ dependencies = [
     "pydantic-ai-slim[google]>=1.89.1",
     "python-decouple-typed == 3.11.0",
     "requests==2.33.1",
-    "structlog-config>=0.4.2",
+    "structlog-config>=0.14.0",
     "tzdata>=2026.2",
     "whenever>=0.9.3",
 ]

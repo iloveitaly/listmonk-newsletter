@@ -611,7 +611,7 @@ requires-dist = [
     { name = "pydantic-ai-slim", extras = ["google"], specifier = ">=1.89.1" },
     { name = "python-decouple-typed", specifier = "==3.11.0" },
     { name = "requests", specifier = "==2.33.1" },
-    { name = "structlog-config", specifier = ">=0.4.2" },
+    { name = "structlog-config", specifier = ">=0.14.0" },
     { name = "tzdata", specifier = ">=2026.2" },
     { name = "whenever", specifier = ">=0.9.3" },
 ]
@@ -1122,16 +1122,16 @@ wheels = [
 
 [[package]]
 name = "structlog-config"
-version = "0.12.4"
+version = "0.14.0"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "orjson" },
     { name = "pytest-plugin-utils" },
     { name = "structlog" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/e4/22/ad28a63ff9108b76366e5c40e01b663caddc9b9582fa0df0be3c656de4be/structlog_config-0.12.4.tar.gz", hash = "sha256:d6216438c5d8b989802a28528573aa7612ae2d112684d8a8a914a18255a11d84", size = 28203, upload-time = "2026-03-29T21:36:42.703Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/36/5f/759bf3d1f48b9271bf1748dc2ee6e3f1e812e5994e223e41be4b984fec58/structlog_config-0.14.0.tar.gz", hash = "sha256:9d52c73795931e4f1ec9562a7a17a761b0b1092632a73fdb456afaa8ca2f91f1", size = 29884, upload-time = "2026-05-07T21:10:41.233Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/38/d0/5e7e21b6c58871ddd55daae695edd07415645ac836adaadf336f545d2cee/structlog_config-0.12.4-py3-none-any.whl", hash = "sha256:9bb1cf0c9077eb8fccae6aa58d390a8053a6d80a7e3b3273896e29ca4d9f7f65", size = 35565, upload-time = "2026-03-29T21:36:41.698Z" },
+    { url = "https://files.pythonhosted.org/packages/38/5a/b6b60005d4edaabd276c87984ad2d09699be7d5f60dc65c4f07e2c12f22b/structlog_config-0.14.0-py3-none-any.whl", hash = "sha256:b07030d5cb8b563fca0ee353d2c79061cd0fefd6092f1c31715ebd156a0b9d63", size = 37640, upload-time = "2026-05-07T21:10:42.131Z" },
 ]
 
 [[package]]
