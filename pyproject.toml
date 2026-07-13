@@ -39,4 +39,4 @@ build-backend = "uv_build"
 module-root = ""
 
 [dependency-groups]
-dev = ["beautiful-traceback>=0.2.0", "djlint>=1.40.3", "ipdb>=0.13.13"]
+dev = ["beautiful-traceback>=0.2.0", "djlint>=1.40.5", "ipdb>=0.13.13"]
