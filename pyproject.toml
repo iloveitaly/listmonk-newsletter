@@ -24,7 +24,7 @@ dependencies = [
     "requests==2.34.2",
     "structlog-config>=0.14.0",
     "tzdata>=2026.2",
-    "whenever>=0.10.1",
+    "whenever>=0.10.2",
 ]
 
 [project.scripts]
