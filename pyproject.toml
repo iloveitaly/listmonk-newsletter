@@ -19,7 +19,7 @@ dependencies = [
     "jinja2 == 3.1.6",
     "lxml==6.1.1",
     "markdown>=3.10",
-    "pydantic-ai-slim[google]>=2.9.0",
+    "pydantic-ai-slim[google]>=2.13.0",
     "python-decouple-typed == 3.11.0",
     "requests==2.34.2",
     "structlog-config>=0.14.0",
