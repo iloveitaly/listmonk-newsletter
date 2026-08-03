@@ -18,7 +18,7 @@ dependencies = [
     "html2text == 2025.4.15",
     "jinja2 == 3.1.6",
     "lxml==6.1.1",
-    "markdown>=3.10",
+    "markdown>=3.10.3",
     "pydantic-ai-slim[google]>=2.18.0",
     "python-decouple-typed == 3.11.0",
     "requests==2.34.2",
