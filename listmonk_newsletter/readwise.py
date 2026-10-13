@@ -12,7 +12,7 @@ import requests
 import structlog
 from decouple import config
 from pydantic import BaseModel
-from whenever import Instant, ZonedDateTime, days
+from whenever import Instant, ZonedDateTime
 
 log = structlog.get_logger()
 
